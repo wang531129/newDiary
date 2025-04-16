@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>需要使用您的位置來獲取當地天氣資訊</string>
+    <key>NSLocationUsageDescription</key>
+    <string>需要使用您的位置來獲取當地天氣資訊</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>需要使用您的位置來獲取當地天氣資訊</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>需要使用您的位置來獲取當地天氣資訊</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.lifestyle</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>需要訪問文檔文件夾以保存和讀取備份</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>需要訪問下載文件夾以保存和讀取備份</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>需要訪問桌面文件夾以保存和讀取備份</string>
+    <key>CFBundleDisplayName</key>
+    <string>日記</string>
+    <key>CFBundleName</key>
+    <string>日記</string>
+</dict>
+</plist> 

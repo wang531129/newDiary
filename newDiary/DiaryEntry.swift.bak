@@ -1,0 +1,216 @@
+import SwiftData
+import Foundation
+
+/// 日記條目，包含日期、想法、心情和天氣等信息
+@Model
+final class DiaryEntry {
+    var id: UUID
+    var date: Date
+    var thoughts: String
+    var weather: WeatherType
+    var temperature: String
+    
+    // 各個分類的條目
+    var expenses: [CategoryEntry]
+    var exercises: [CategoryEntry]
+    var sleeps: [CategoryEntry]
+    var works: [CategoryEntry]
+    var relationships: [CategoryEntry]
+    var studies: [CategoryEntry]
+    
+    // 初始化時添加更多的錯誤處理和日誌
+    init(
+        id: UUID = UUID(),
+        date: Date,
+        thoughts: String = "",
+        weather: WeatherType = .sunny,
+        temperature: String = ""
+    ) {
+        self.id = id
+        self.date = date
+        self.thoughts = thoughts
+        self.weather = weather
+        self.temperature = temperature
+        
+        // 初始化空數組
+        self.expenses = []
+        self.exercises = []
+        self.sleeps = []
+        self.works = []
+        self.relationships = []
+        self.studies = []
+        
+        #if DEBUG
+        print("DiaryEntry 初始化: \(date.formatted())")
+        #endif
+    }
+    
+    // 備份恢復時使用的初始化方法，包含錯誤處理
+    static func createFromBackup(
+        id: UUID = UUID(),
+        date: Date,
+        thoughts: String = "",
+        weather: WeatherType = .sunny,
+        temperature: String = "",
+        expenses: [CategoryEntry] = [],
+        exercises: [CategoryEntry] = [],
+        sleeps: [CategoryEntry] = [],
+        works: [CategoryEntry] = [],
+        relationships: [CategoryEntry] = [],
+        studies: [CategoryEntry] = []
+    ) -> DiaryEntry {
+        let entry = DiaryEntry(
+            id: id,
+            date: date,
+            thoughts: thoughts,
+            weather: weather,
+            temperature: temperature
+        )
+        
+        // 使用安全的方式添加每個類型的條目
+        entry.expenses = expenses
+        entry.exercises = exercises
+        entry.sleeps = sleeps
+        entry.works = works
+        entry.relationships = relationships
+        entry.studies = studies
+        
+        #if DEBUG
+        print("DiaryEntry 從備份創建: \(date.formatted())")
+        #endif
+        
+        return entry
+    }
+}
+
+// 條目中的天氣類型
+enum WeatherType: String, Codable, CaseIterable {
+    case sunny = "晴朗"
+    case cloudy = "多雲"
+    case rain = "下雨"
+    case snow = "下雪"
+    case foggy = "霧"
+    case windy = "風"
+    case thunderstorm = "雷暴"
+    
+    var icon: String {
+        switch self {
+        case .sunny: return "sun.max.fill"
+        case .cloudy: return "cloud.fill"
+        case .rain: return "cloud.rain.fill"
+        case .snow: return "cloud.snow.fill"
+        case .foggy: return "cloud.fog.fill"
+        case .windy: return "wind"
+        case .thunderstorm: return "cloud.bolt.fill"
+        }
+    }
+}
+
+// 條目中的類別類型
+@Model
+final class CategoryEntry {
+    var id: UUID
+    var type: DiaryEntryType
+    var name: String
+    var category: String
+    var number: Double
+    var notes: String
+    
+    // 由於SwiftData初始化時可能會出現解碼錯誤，增加錯誤處理
+    init(
+        id: UUID = UUID(),
+        name: String = "",
+        number: Double = 0,
+        notes: String = "",
+        category: String = "",
+        type: DiaryEntryType
+    ) {
+        self.id = id
+        self.name = name
+        self.number = number
+        self.notes = notes
+        self.category = category
+        self.type = type
+        
+        #if DEBUG
+        print("CategoryEntry 初始化: \(type.rawValue) - \(name)")
+        #endif
+    }
+}
+
+// 條目類型
+enum DiaryEntryType: String, Codable, CaseIterable {
+    case expense = "expense"
+    case exercise = "exercise"
+    case sleep = "sleep"
+    case work = "work"
+    case relationship = "relationship"
+    case study = "study"
+    
+    var localizedName: String {
+        switch self {
+        case .expense: return "支出"
+        case .exercise: return "運動"
+        case .sleep: return "睡眠"
+        case .work: return "工作"
+        case .relationship: return "關係"
+        case .study: return "學習"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .expense: return "dollarsign.circle"
+        case .exercise: return "figure.run"
+        case .sleep: return "bed.double.fill"
+        case .work: return "briefcase.fill"
+        case .relationship: return "person.2.fill"
+        case .study: return "book.fill"
+        }
+    }
+}
+
+// 擴展Color以支持從字符串創建
+extension Color {
+    static func fromString(_ colorString: String) -> Color {
+        switch colorString {
+        case "Red":
+            return .red
+        case "Green":
+            return .green
+        case "Blue":
+            return .blue
+        case "Orange":
+            return .orange
+        case "Yellow":
+            return .yellow
+        case "Purple":
+            return .purple
+        case "Pink":
+            return .pink
+        case "Black":
+            return .black
+        case "White":
+            return .white
+        case "Gray":
+            return .gray
+        default:
+            return .primary
+        }
+    }
+}
+
+// 安全解碼擴展，用於處理SwiftData的解碼錯誤
+extension JSONDecoder {
+    static func safelyDecode<T: Decodable>(_ type: T.Type, from data: Data) -> Result<T, Error> {
+        do {
+            let decoded = try JSONDecoder().decode(type, from: data)
+            return .success(decoded)
+        } catch {
+            #if DEBUG
+            print("解碼失敗: \(error)")
+            #endif
+            return .failure(error)
+        }
+    }
+} 

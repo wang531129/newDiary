@@ -1,0 +1,4650 @@
+//
+//  ContentView.swift
+//  newDiary
+//
+//  Created by WangPuma on 2025/3/18.
+//
+
+/*
+ 重構建議:
+ 1. ValueTransformer 類別 (WeatherTypeTransformer, CategoryTypeTransformer) 可能不需要，因為 SwiftData 已能處理 enum 的編碼解碼
+ 2. MainDiaryForm 結構體與 NewDiaryView 功能重複，可以刪除其中一個
+ 3. 嵌套的 Form/Section 結構過多，特別是在 WeatherAndThoughtsView 及其子視圖中，可以簡化層次
+ 4. @AppStorage 變數在多個視圖中重複宣告，建議創建一個共享的設定環境物件
+ 5. 多餘的 padding 和不必要的容器嵌套可以精簡
+ */
+
+import SwiftUI
+import SwiftData
+import AppKit
+import Foundation
+import WeatherKit
+import Charts
+import MapKit
+import UniformTypeIdentifiers
+import EventKit
+import ReminderView
+
+// MARK: - 天氣類型定義
+/// 定義所有可用的天氣類型
+enum WeatherType: String, Codable, CaseIterable {
+    case sunny = "晴天"
+    case cloudy = "多雲"
+    case rainy = "下雨"
+    case storm = "暴雨"
+    case windy = "刮風"
+    case foggy = "霧天"
+    case snow = "下雪"
+    
+    /// 每種天氣對應的 SF Symbols 圖標名稱
+    var icon: String {
+        switch self {
+        case .sunny: return "sun.max.fill"      // 太陽圖標
+        case .cloudy: return "cloud.fill"       // 雲朵圖標
+        case .rainy: return "cloud.rain.fill"   // 下雨圖標
+        case .storm: return "cloud.bolt.rain.fill" // 暴雨圖標
+        case .windy: return "wind"              // 風圖標
+        case .foggy: return "cloud.fog.fill"    // 霧天圖標
+        case .snow: return "snow"               // 下雪圖標
+        }
+    }
+}
+
+// MARK: - 分類類型定義
+/// 定義所有可用的記錄分類
+enum DiaryEntryType: String, Codable, CaseIterable {
+    case expense = "支出"
+    case exercise = "運動"
+    case sleep = "睡眠"
+    case work = "工作"
+    case relationship = "關係"
+    case study = "學習"
+    
+    /// 每種分類對應的 SF Symbols 圖標名稱
+    var icon: String {
+        switch self {
+        case .expense: return "dollarsign.circle.fill"    // 金錢圖標
+        case .exercise: return "figure.run.circle.fill"   // 運動圖標
+        case .sleep: return "bed.double.circle.fill"      // 睡眠圖標
+        case .work: return "briefcase.circle.fill"        // 工作圖標
+        case .relationship: return "person.2.circle.fill"  // 關係圖標
+        case .study: return "book.circle.fill"            // 學習圖標
+        }
+    }
+    
+    /// 每種分類的預定義選項
+    var categories: [String] {
+        switch self {
+        case .expense:
+            return ["飲食(早)", "飲食(中)", "飲食(晚)", "家庭用品", "個人用品", 
+                   "稅金", "水電瓦斯費", "贈予", "紅白包", "交通費"]
+        case .exercise:
+            return ["肩", "背", "胸", "腿", "手", "核心"]
+        case .work:
+            return ["菌檢", "儀校", "代工", "協助", "衛生檢查", "教育訓練"]
+        case .relationship:
+            return ["視訊", "短信", "會面", "聚餐", "探視"]
+        case .study:
+            return ["書籍", "電媒", "語言", "健身", "修養"]
+        case .sleep:
+            return []
+        }
+    }
+}
+
+// MARK: - 天氣 API 相關結構
+/// OpenWeatherMap API 返回數據的結構定義
+struct WeatherResponse: Codable {
+    let main: MainWeather    // 主要天氣數據（溫度等）
+    let weather: [Weather]   // 天氣狀況描述
+    
+    struct MainWeather: Codable {
+        let temp: Double     // 當前溫度
+        let temp_min: Double // 最低溫度
+        let temp_max: Double // 最高溫度
+    }
+    
+    struct Weather: Codable {
+        let main: String        // 主要天氣狀況
+        let description: String // 天氣描述
+    }
+}
+
+/// 天氣服務類，處理與 OpenWeatherMap API 的交互
+class WeatherService: NSObject, CLLocationManagerDelegate {
+    private let apiKey: String        // API 密鑰
+    private let locationManager = CLLocationManager()
+    private var locationCompletion: ((Result<CLLocation, Error>) -> Void)?
+    
+    init(apiKey: String) {
+        self.apiKey = apiKey
+        super.init()
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+    
+    /// 請求位置權限並獲取位置
+    private func requestLocation() async throws -> CLLocation {
+        // 檢查位置服務是否可用
+        guard CLLocationManager.locationServicesEnabled() else {
+            throw NSError(domain: "WeatherService", code: 1, userInfo: [NSLocalizedDescriptionKey: "位置服務未啟用"])
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            locationCompletion = { result in
+                switch result {
+                case .success(let location):
+                    continuation.resume(returning: location)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            
+            // 根據授權狀態請求位置
+            let status = locationManager.authorizationStatus
+            switch status {
+            case .authorizedWhenInUse, .authorizedAlways:
+                locationManager.requestLocation()
+            case .notDetermined:
+                locationManager.requestWhenInUseAuthorization()
+            case .denied, .restricted:
+                continuation.resume(throwing: NSError(domain: "WeatherService", code: 2, userInfo: [NSLocalizedDescriptionKey: "請在系統設定中允許應用程序使用位置服務"]))
+            @unknown default:
+                continuation.resume(throwing: NSError(domain: "WeatherService", code: 2, userInfo: [NSLocalizedDescriptionKey: "未知的授權狀態"]))
+            }
+        }
+    }
+    
+    // CLLocationManagerDelegate 方法
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let location = locations.first {
+            locationCompletion?(.success(location))
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        locationCompletion?(.failure(error))
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways:
+            locationManager.requestLocation()
+        case .denied, .restricted:
+            locationCompletion?(.failure(NSError(domain: "WeatherService", code: 2, userInfo: [NSLocalizedDescriptionKey: "位置權限未授予"])))
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        @unknown default:
+            locationCompletion?(.failure(NSError(domain: "WeatherService", code: 2, userInfo: [NSLocalizedDescriptionKey: "未知的授權狀態"])))
+        }
+    }
+    
+    /// 從 API 獲取天氣數據
+    func fetchWeather() async throws -> (WeatherType, String) {
+        // 獲取當前位置
+        let location = try await requestLocation()
+        
+        // 構建 API 請求 URL（使用經緯度）
+        let urlString = "https://api.openweathermap.org/data/2.5/weather?lat=\(location.coordinate.latitude)&lon=\(location.coordinate.longitude)&appid=\(apiKey)&units=metric&lang=zh_tw"
+        guard let url = URL(string: urlString) else {
+            throw URLError(.badURL)
+        }
+        
+        // 發送請求並獲取數據
+        let (data, httpResponse) = try await URLSession.shared.data(from: url)
+        
+        // 打印 API 響應狀態和數據（用於調試）
+        if let httpResponse = httpResponse as? HTTPURLResponse {
+            print("HTTP Status Code: \(httpResponse.statusCode)")
+        }
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("API Response: \(jsonString)")
+        }
+        
+        // 解析 API 返回的數據
+        let weatherResponse = try JSONDecoder().decode(WeatherResponse.self, from: data)
+        
+        // 將 API 返回的天氣類型轉換為應用內的天氣類型
+        let weatherType = self.convertToWeatherType(weatherResponse.weather.first?.main ?? "")
+        
+        // 使用地理編碼器獲取地點名稱
+        let geocoder = CLGeocoder()
+        let placemarks = try await geocoder.reverseGeocodeLocation(location)
+        let locationName = placemarks.first?.locality ?? "當前位置"
+        
+        // 格式化溫度顯示字符串
+        let minTemp = Int(round(weatherResponse.main.temp_min))
+        let maxTemp = Int(round(weatherResponse.main.temp_max))
+        let currentTemp = Int(round(weatherResponse.main.temp))
+        
+        // 輸出調試信息
+        print("天氣數據: 當前溫度=\(currentTemp)°C, 最低=\(minTemp)°C, 最高=\(maxTemp)°C")
+        
+        // 根據OpenWeatherMap API文檔，current weather API中的temp_min和temp_max通常與temp相同，
+        // 並不代表一天的最高/最低溫度，因此顯示當前溫度更合適
+        let temperatureString = "\(locationName) \(currentTemp)°C \(weatherResponse.weather.first?.description ?? "")"
+        
+        // 輸出最終的溫度字符串
+        print("顯示的溫度字符串: \(temperatureString)")
+        
+        return (weatherType, temperatureString)
+    }
+    
+    /// 將 OpenWeatherMap 的天氣類型轉換為應用內的天氣類型
+    private func convertToWeatherType(_ openWeatherMain: String) -> WeatherType {
+        switch openWeatherMain.lowercased() {
+        case "clear": return .sunny
+        case "clouds": return .cloudy
+        case "rain": return .rainy
+        case "thunderstorm": return .storm
+        case "snow": return .snow
+        case "mist", "fog": return .foggy
+        default: return .sunny
+        }
+    }
+}
+
+// MARK: - 主要數據模型
+/// 日誌條目模型
+@Model
+final class DiaryEntry {
+    @Attribute(.unique) var id: UUID  // 唯一標識符
+    var date: Date                    // 日期
+    var weatherRaw: String            // 天氣（原始字符串）
+    var thoughts: String              // 記事
+    var temperature: String = ""      // 溫度資訊
+    
+    /// 天氣類型的計算屬性
+    var weather: WeatherType {
+        get { WeatherType(rawValue: weatherRaw) ?? .sunny }
+        set { weatherRaw = newValue.rawValue }
+    }
+    
+    // 各種分類的條目集合
+    @Relationship(deleteRule: .cascade) var expenses: [CategoryEntry] = []      // 支出記錄
+    @Relationship(deleteRule: .cascade) var exercises: [CategoryEntry] = []     // 運動記錄
+    @Relationship(deleteRule: .cascade) var sleeps: [CategoryEntry] = []        // 睡眠記錄
+    @Relationship(deleteRule: .cascade) var works: [CategoryEntry] = []         // 工作記錄
+    @Relationship(deleteRule: .cascade) var relationships: [CategoryEntry] = [] // 關係記錄
+    @Relationship(deleteRule: .cascade) var studies: [CategoryEntry] = []       // 學習記錄
+    
+    /// 初始化方法
+    init(date: Date = Date(), weather: WeatherType = .sunny, thoughts: String = "", temperature: String = "") {
+        self.id = UUID()
+        self.date = date
+        self.weatherRaw = weather.rawValue
+        self.thoughts = thoughts
+        self.temperature = temperature
+    }
+}
+
+// MARK: - 分類條目模型
+/// 分類記錄條目模型
+@Model
+final class CategoryEntry {
+    @Attribute(.unique) var id: UUID  // 唯一標識符
+    var typeRaw: String               // 分類類型（原始字符串）
+    var name: String                  // 名稱/品質/姓名
+    var category: String              // 類別/時間
+    var number: Double                // 金額/組數/醒來次數/時長
+    var notes: String                 // 備注
+    
+    /// 分類類型的計算屬性
+    var type: DiaryEntryType {
+        get { DiaryEntryType(rawValue: typeRaw) ?? .expense }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    /// 初始化方法
+    init(type: DiaryEntryType, name: String = "", category: String = "", number: Double = 0.0, notes: String = "") {
+        self.id = UUID()
+        self.typeRaw = type.rawValue
+        self.name = name
+        self.category = category
+        self.number = number
+        self.notes = notes
+    }
+}
+
+// MARK: - WeatherTypeTransformer可能重复不必要的转换器
+
+// WeatherType 转换器
+class WeatherTypeTransformer: ValueTransformer {
+    static let shared = WeatherTypeTransformer()
+    
+    override class func transformedValueClass() -> AnyClass {
+        return NSString.self
+    }
+    
+    override class func allowsReverseTransformation() -> Bool {
+        return true
+    }
+    
+    override func transformedValue(_ value: Any?) -> Any? {
+        return "Deprecated"
+    }
+    
+    override func reverseTransformedValue(_ value: Any?) -> Any? {
+        return nil
+    }
+}
+
+// 注册 WeatherType 转换器
+extension WeatherTypeTransformer {
+    static func register() {
+        // Deprecated
+    }
+}
+
+// MARK: - 主表單視圖與 NewDiaryView 功能重複
+struct MainDiaryForm: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @State private var date = Date()
+    @State private var selectedWeather = WeatherType.sunny.rawValue
+    @State private var thoughts = ""
+    
+    // 添加字体颜色设置
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                // 使用自定义日期选择器
+                HStack {
+                    Text("日期")
+                        .font(.system(size: 20))
+                    Spacer()
+                    CustomDatePickerView(
+                        selectedDate: $date,
+                        titleFontColor: titleFontColor,
+                        contentFontColor: contentFontColor
+                    )
+                    .help("選擇要查看的日期")
+                }
+                .padding(.vertical, 5)
+                
+                Section("天氣") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 15) {
+                            ForEach(WeatherType.allCases, id: \.self) { weather in
+                                VStack {
+                                    Image(systemName: weather.icon)
+                                        .font(.system(size: 22))
+                                        .foregroundColor(selectedWeather == weather.rawValue ? .blue : .gray)
+                                        .padding(8)
+                                        .background(
+                                            Circle()
+                                                .fill(selectedWeather == weather.rawValue ? Color.blue.opacity(0.2) : Color.clear)
+                                        )
+                                    Text(weather.rawValue)
+                                        .font(.system(size: 20))
+                                }
+                                .onTapGesture {
+                                    selectedWeather = weather.rawValue
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 80)
+                }
+                
+                Section(header: Text("記事")) {
+                    TextEditor(text: $thoughts)
+                        .frame(height: 100)
+                }
+            }
+            .navigationTitle("新增日誌")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        let newDiary = DiaryEntry(date: date, weather: WeatherType(rawValue: selectedWeather) ?? .sunny, thoughts: thoughts)
+                        modelContext.insert(newDiary)
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct CategoryEntryForm: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    let type: DiaryEntryType
+    let diary: DiaryEntry
+    var editingEntry: CategoryEntry? = nil
+    
+    @State private var name = ""
+    @State private var category = ""
+    @State private var number: Double = 0
+    @State private var numberString = "0"
+    @State private var notes = ""
+    @State private var showNumberError = false
+    @State private var showingCategoryPicker = false
+    @FocusState private var isCategoryFocused: Bool
+    
+    // 新增的狀態變數，用於自動完成功能
+    @State private var suggestions: [String] = []
+    @State private var showingSuggestions = false
+    @State private var selectedSuggestionIndex = 0
+    @Query private var allDiaries: [DiaryEntry]
+    
+    init(type: DiaryEntryType, diary: DiaryEntry, editingEntry: CategoryEntry? = nil) {
+        self.type = type
+        self.diary = diary
+        self.editingEntry = editingEntry
+        
+        let initialName = editingEntry?.name ?? ""
+        let initialCategory = editingEntry?.category ?? ""
+        let initialNumber = editingEntry?.number ?? 0
+        let initialNotes = editingEntry?.notes ?? ""
+        
+        _name = State(initialValue: initialName)
+        _category = State(initialValue: initialCategory)
+        _number = State(initialValue: initialNumber)
+        
+        // 如果是時間相關項目，格式化為h:mm格式
+        if  editingEntry != nil,
+           (type == .exercise || type == .sleep || type == .work || type == .relationship || type == .study) {
+            _numberString = State(initialValue: formatMinutesToTimeString(Int(initialNumber)))
+        } else {
+            _numberString = State(initialValue: String(format: "%.0f", initialNumber))
+        }
+        
+        _notes = State(initialValue: initialNotes)
+    }
+    
+    private func validateAndUpdateNumber(_ newValue: String) {
+        if let parsedNumber = Double(newValue.replacingOccurrences(of: ".", with: "")) {
+            if parsedNumber >= 0 && parsedNumber <= 999999 {
+                number = parsedNumber
+                numberString = String(format: "%.0f", parsedNumber)
+                showNumberError = false
+            } else {
+                showNumberError = true
+            }
+        } else {
+            showNumberError = true
+        }
+    }
+    
+    // 獲取以前輸入過的名稱列表
+    private func getPreviousNames() -> [String] {
+        var names = Set<String>()
+        
+        for diary in allDiaries {
+            let entries: [CategoryEntry]
+            switch type {
+            case .expense:
+                entries = diary.expenses
+            case .exercise:
+                entries = diary.exercises
+            case .sleep:
+                entries = diary.sleeps
+            case .work:
+                entries = diary.works
+            case .relationship:
+                entries = diary.relationships
+            case .study:
+                entries = diary.studies
+            }
+            
+            for entry in entries {
+                if !entry.name.isEmpty {
+                    names.insert(entry.name)
+                }
+            }
+        }
+        
+        return Array(names).sorted()
+    }
+    
+    // 根據輸入生成建議
+    private func updateSuggestions() {
+        if name.isEmpty {
+            showingSuggestions = false
+            return
+        }
+        
+        let allNames = getPreviousNames()
+        suggestions = allNames.filter { $0.localizedCaseInsensitiveContains(name) && $0 != name }
+        
+        showingSuggestions = !suggestions.isEmpty
+        selectedSuggestionIndex = 0
+    }
+    
+    // 選擇建議
+    private func selectSuggestion(_ suggestion: String) {
+        name = suggestion
+        showingSuggestions = false
+    }
+    
+    // 處理Tab鍵自動完成
+    private func handleTabKey() {
+        if showingSuggestions && !suggestions.isEmpty {
+            name = suggestions[selectedSuggestionIndex]
+            showingSuggestions = false
+        }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                NameSectionWithAutocomplete(
+                    type: type,
+                    name: $name,
+                    suggestions: suggestions,
+                    showingSuggestions: $showingSuggestions,
+                    selectedSuggestionIndex: $selectedSuggestionIndex,
+                    onNameChanged: updateSuggestions,
+                    onSuggestionSelected: selectSuggestion,
+                    onTabPressed: handleTabKey
+                )
+                CategorySection(type: type, category: $category)
+                NumberSection(
+                    type: type,
+                    numberString: $numberString,
+                    number: $number,
+                    showNumberError: $showNumberError,
+                    validateAndUpdateNumber: validateAndUpdateNumber
+                )
+                NotesSection(notes: $notes)
+            }
+            .formStyle(.grouped)
+            .navigationTitle(editingEntry == nil ? "新增\(type.rawValue)記錄" : "編輯\(type.rawValue)記錄")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                        .font(.system(size: 20))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        if let editingEntry = editingEntry {
+                            editingEntry.name = name
+                            editingEntry.category = category
+                            editingEntry.number = number
+                            editingEntry.notes = notes
+                        } else {
+                            let entry = CategoryEntry(type: type, name: name, category: category, number: number, notes: notes)
+                            switch type {
+                            case .expense: diary.expenses.append(entry)
+                            case .exercise: diary.exercises.append(entry)
+                            case .sleep: diary.sleeps.append(entry)
+                            case .work: diary.works.append(entry)
+                            case .relationship: diary.relationships.append(entry)
+                            case .study: diary.studies.append(entry)
+                            }
+                        }
+                        try? modelContext.save()
+                        dismiss()
+                    }
+                    .disabled(showNumberError)
+                    .font(.system(size: 20))
+                }
+            }
+            .onAppear {
+                updateSuggestions()
+            }
+        }
+        .frame(minWidth: 300, minHeight: 200)
+    }
+}
+
+// MARK: - CategoryEntryForm Subviews
+private struct NameSection: View {
+    let type: DiaryEntryType
+    @Binding var name: String
+    
+    var nameLabel: String {
+        switch type {
+        case .expense: return "名稱"
+        case .exercise: return "名稱"
+        case .sleep: return "品質"
+        case .work: return "名稱"
+        case .relationship: return "姓名"
+        case .study: return "名稱"
+        }
+    }
+    
+    var body: some View {
+        Section {
+            HStack {
+                Image(systemName: type.icon)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 20))
+                Text(nameLabel)
+                    .foregroundColor(.secondary)
+                    .font(.system(size: 20))
+                Spacer()
+                TextField("", text: $name)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 20))
+                    .multilineTextAlignment(.trailing)
+            }
+        }
+    }
+}
+
+private struct CategorySection: View {
+    let type: DiaryEntryType
+    @Binding var category: String
+    @FocusState private var isCategoryFocused: Bool
+    @State private var showingSuggestions = false
+    @State private var suggestions: [String] = []
+    @State private var selectedSuggestionIndex = 0
+    @Query private var allDiaries: [DiaryEntry]
+    
+    // 根据分类类型显示不同的标签文本
+    var categoryLabel: String {
+        switch type {
+        case .expense: return "類別"
+        case .exercise: return "運動類型"
+        case .sleep: return "醒來次數"
+        case .work: return "工作類型"
+        case .relationship: return "關係類型"
+        case .study: return "學習類型"
+        }
+    }
+    
+    // 獲取以前輸入過的類別列表
+    private func getPreviousCategories() -> [String] {
+        var categories = Set<String>()
+        
+        // 添加預定義的類別
+        for category in type.categories {
+            categories.insert(category)
+        }
+        
+        // 添加以前使用過的類別
+        for diary in allDiaries {
+            let entries: [CategoryEntry]
+            switch type {
+            case .expense:
+                entries = diary.expenses
+            case .exercise:
+                entries = diary.exercises
+            case .sleep:
+                entries = diary.sleeps
+            case .work:
+                entries = diary.works
+            case .relationship:
+                entries = diary.relationships
+            case .study:
+                entries = diary.studies
+            }
+            
+            for entry in entries {
+                if !entry.category.isEmpty {
+                    categories.insert(entry.category)
+                }
+            }
+        }
+        
+        return Array(categories).sorted()
+    }
+    
+    // 根據輸入生成建議
+    private func updateSuggestions() {
+        if category.isEmpty {
+            showingSuggestions = false
+            return
+        }
+        
+        let allCategories = getPreviousCategories()
+        suggestions = allCategories.filter { $0.localizedCaseInsensitiveContains(category) && $0 != category }
+        
+        showingSuggestions = !suggestions.isEmpty
+        selectedSuggestionIndex = 0
+    }
+    
+    // 選擇建議
+    private func selectSuggestion(_ suggestion: String) {
+        category = suggestion
+        showingSuggestions = false
+    }
+    
+    // 處理Tab鍵自動完成
+    private func handleTabKey() {
+        if showingSuggestions && !suggestions.isEmpty {
+            category = suggestions[selectedSuggestionIndex]
+            showingSuggestions = false
+        }
+    }
+    
+    var body: some View {
+        Section {
+            if type != .sleep {
+                HStack {
+                    Image(systemName: "tag.fill")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 20))
+                    Text(categoryLabel)
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 20))
+                    Spacer()
+                    
+                    // 移除条件判断，始终显示输入框
+                    VStack(alignment: .trailing, spacing: 0) {
+                        HStack {
+                            TextField("", text: $category)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 20))
+                                .multilineTextAlignment(.trailing)
+                                .focused($isCategoryFocused)
+                                .onChange(of: category) { oldValue, newValue in
+                                    updateSuggestions()
+                                }
+                                .onSubmit {
+                                    showingSuggestions = false
+                                }
+                                .onKeyPress(.tab) {
+                                    handleTabKey()
+                                    return .handled
+                                }
+                                .help("輸入類別，按Tab可自動填寫")
+                        }
+                        
+                        if showingSuggestions && isCategoryFocused {
+                            ScrollView {
+                                LazyVStack(alignment: .trailing, spacing: 8) {
+                                    ForEach(Array(suggestions.enumerated()), id: \.element) { index, suggestion in
+                                        Text(suggestion)
+                                            .font(.system(size: 18))
+                                            .padding(.vertical, 4)
+                                            .padding(.horizontal, 8)
+                                            .frame(maxWidth: .infinity, alignment: .trailing)
+                                            .background(index == selectedSuggestionIndex ? Color.blue.opacity(0.2) : Color.clear)
+                                            .cornerRadius(4)
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                selectSuggestion(suggestion)
+                                            }
+                                            .onHover { isHovered in
+                                                if isHovered {
+                                                    selectedSuggestionIndex = index
+                                                }
+                                            }
+                                            .customCursor(.pointingHand)
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 150)
+                            .background(Color(NSColor.windowBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .padding(.top, 4)
+                        }
+                    }
+                    
+                    // 注释掉下拉菜单部分
+                    /*
+                    } else {
+                        Menu {
+                            ForEach(type.predefinedCategories, id: \.self) { predefinedCategory in
+                                Button(predefinedCategory) {
+                                    category = predefinedCategory
+                                }
+                                .font(.system(size: 20))
+                            }
+                            
+                            Divider()
+                            
+                            Button("自定義...") {
+                                isCustomizing = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isCategoryFocused = true
+                                    updateSuggestions()
+                                }
+                            }
+                        } label: {
+                            Text(category.isEmpty ? "選擇類別" : category)
+                                .foregroundColor(category.isEmpty ? .secondary : .primary)
+                                .font(.system(size: 20))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                        }
+                        .menuStyle(.borderlessButton)
+                        .customCursor(.pointingHand)
+                        .help("選擇或自定義類別")
+                    }
+                    */
+                }
+            } else {
+                HStack {
+                    Image(systemName: "tag.fill")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 20))
+                    Text(categoryLabel)
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 20))
+                    Spacer()
+                    TextField("", text: $category)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 20))
+                        .multilineTextAlignment(.trailing)
+                        .focused($isCategoryFocused)
+                        .onChange(of: category) { oldValue, newValue in
+                            updateSuggestions()
+                        }
+                        .onSubmit {
+                            showingSuggestions = false
+                        }
+                        .onKeyPress(.tab) {
+                            handleTabKey()
+                            return .handled
+                        }
+                        .help("輸入醒來次數，按Tab可自動填寫")
+                }
+                
+                if showingSuggestions && isCategoryFocused {
+                    ScrollView {
+                        LazyVStack(alignment: .trailing, spacing: 8) {
+                            ForEach(Array(suggestions.enumerated()), id: \.element) { index, suggestion in
+                                Text(suggestion)
+                                    .font(.system(size: 18))
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 8)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .background(index == selectedSuggestionIndex ? Color.blue.opacity(0.2) : Color.clear)
+                                    .cornerRadius(4)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        selectSuggestion(suggestion)
+                                    }
+                                    .onHover { isHovered in
+                                        if isHovered {
+                                            selectedSuggestionIndex = index
+                                        }
+                                    }
+                                    .customCursor(.pointingHand)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 150)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .padding(.top, 4)
+                }
+            }
+        }
+    }
+}
+
+private struct NumberSection: View {
+    let type: DiaryEntryType
+    @Binding var numberString: String
+    @Binding var number: Double
+    @Binding var showNumberError: Bool
+    let validateAndUpdateNumber: (String) -> Void
+    
+    var numberLabel: String {
+        switch type {
+        case .expense: return "金額"
+        case .exercise: return "時間"
+        case .sleep: return "時間"
+        case .work: return "時長"
+        case .relationship: return "時長"
+        case .study: return "時長"
+        }
+    }
+    
+    var body: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "number.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 20))
+                    Text(numberLabel)
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 20))
+                    Spacer()
+                    TextField(
+                        "輸入\(numberLabel)\(type == .exercise || type == .sleep || type == .work || type == .relationship || type == .study ? "（h:mm或分鐘）" : "")",
+                        text: $numberString
+                    )
+                    .font(.system(size: 14))
+                    .onChange(of: numberString) { oldValue, newValue in
+                        if type == .exercise || type == .sleep || type == .work || type == .relationship || type == .study {
+                            // 如果是時間相關條目，允許h:mm格式
+                            if newValue.contains(":") {
+                                processTimeFormat(newValue)
+                            } else {
+                                // 純數字輸入時，僅允許數字
+                                let filtered = newValue.filter { "0123456789".contains($0) }
+                                if filtered != newValue {
+                                    numberString = filtered
+                                }
+                                validateAndUpdateNumber(filtered)
+                            }
+                        } else {
+                            // 其他類型（如金額）只接受數字
+                            let filtered = newValue.filter { "0123456789".contains($0) }
+                            if filtered != newValue {
+                                numberString = filtered
+                            }
+                            validateAndUpdateNumber(filtered)
+                        }
+                    }
+                    .font(.system(size: 20))
+                    
+                    Stepper("", value: $number, in: 0...9999, step: 1) { _ in
+                        if type == .exercise || type == .sleep || type == .work || type == .relationship || type == .study {
+                            // 時間相關條目顯示為h:mm
+                            numberString = formatMinutesToTimeString(Int(number))
+                        } else {
+                            numberString = String(format: "%.0f", number)
+                        }
+                    }
+                }
+                
+                if showNumberError {
+                    Text("請輸入有效的數值或時間格式")
+                        .foregroundColor(.red)
+                        .font(.system(size: 20))
+                }
+            }
+        }
+    }
+    
+    // 處理h:mm格式的時間輸入
+    private func processTimeFormat(_ input: String) {
+        // 分割小時和分鐘
+        let components = input.split(separator: ":")
+        
+        if components.count == 2,
+           let hours = Int(components[0]),
+           let minutes = Int(components[1]),
+           hours >= 0 && hours <= 99,
+           minutes >= 0 && minutes <= 59 {
+            
+            // 計算總分鐘數
+            let totalMinutes = hours * 60 + minutes
+            
+            if totalMinutes <= 9999 {
+                number = Double(totalMinutes)
+                numberString = input  // 保持h:mm格式
+                showNumberError = false
+            } else {
+                showNumberError = true
+            }
+        } else {
+            showNumberError = true
+        }
+    }
+}
+
+// 將分鐘數格式化為h:mm格式
+func formatMinutesToTimeString(_ minutes: Int) -> String {
+    let hours = minutes / 60
+    let mins = minutes % 60
+    return String(format: "%d:%02d", hours, mins)
+}
+
+private struct NotesSection: View {
+    @Binding var notes: String
+    
+    var body: some View {
+        Section {
+            VStack(alignment: .leading) {
+                HStack {
+                    Image(systemName: "text.bubble.fill")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 20))
+                    Text("備注")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 20))
+                }
+                
+                TextEditor(text: $notes)
+                    .font(.system(size: 16))
+                    .frame(height: 100)
+                    .cornerRadius(4)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+struct CategoryTableView: View {
+    let type: DiaryEntryType
+    let entries: [CategoryEntry]
+    let diary: DiaryEntry
+    let onAdd: () -> Void
+    let onDelete: (IndexSet) -> Void
+    let onEdit: (CategoryEntry) -> Void
+    
+    // ⚠️ 這裡的 @AppStorage 宣告與其他視圖重複，考慮創建一個共享設定物件
+    @AppStorage("titleFontSize") private var titleFontSize: Double = 22
+    @AppStorage("contentFontSize") private var contentFontSize: Double = 16
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    // 目標偏好設置也可以整合到共享設定物件中
+    @AppStorage("monthlyExpenseLimit") private var monthlyExpenseLimit: Double = 20000
+    @AppStorage("dailyExerciseGoal") private var dailyExerciseGoal: Double = 60
+    @AppStorage("dailySleepGoal") private var dailySleepGoal: Double = 390
+    @AppStorage("dailyWorkGoal") private var dailyWorkGoal: Double = 120
+    @AppStorage("dailyRelationshipGoal") private var dailyRelationshipGoal: Double = 30
+    @AppStorage("dailyStudyGoal") private var dailyStudyGoal: Double = 60
+    
+    var total: Double {
+        entries.reduce(0) { $0 + $1.number }
+    }
+    
+    // 计算月度合计
+    var monthlyTotal: Double {
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: diary.date)
+        let currentYear = calendar.component(.year, from: diary.date)
+        
+        // 获取所有日记条目
+        let modelContext = diary.modelContext
+        let descriptor = FetchDescriptor<DiaryEntry>()
+        guard let allDiaries = try? modelContext?.fetch(descriptor) else { return 0 }
+        
+        // 过滤出同月的日记条目
+        let monthDiaries = allDiaries.filter { entry in
+            let entryMonth = calendar.component(.month, from: entry.date)
+            let entryYear = calendar.component(.year, from: entry.date)
+            return entryMonth == currentMonth && entryYear == currentYear
+        }
+        
+        // 根据类型获取并计算合计
+        let monthlyEntries = monthDiaries.flatMap { diary -> [CategoryEntry] in
+            switch type {
+            case .expense: return diary.expenses
+            case .exercise: return diary.exercises
+            case .sleep: return diary.sleeps
+            case .work: return diary.works
+            case .relationship: return diary.relationships
+            case .study: return diary.studies
+            }
+        }
+        
+        return monthlyEntries.reduce(0) { $0 + $1.number }
+    }
+    
+    var nameLabel: String {
+        switch type {
+        case .expense: return "名稱"
+        case .exercise: return "名稱"
+        case .sleep: return "品質"
+        case .work: return "名稱"
+        case .relationship: return "姓名"
+        case .study: return "名稱"
+        }
+    }
+    
+    var categoryLabel: String {
+        switch type {
+        case .expense: return "類別"
+        case .exercise: return "運動類型"
+        case .sleep: return "醒來次數"
+        case .work: return "工作類型"
+        case .relationship: return "關係類型"
+        case .study: return "學習類型"
+        }
+    }
+    
+    var numberLabel: String {
+        switch type {
+        case .expense: return "金額"
+        case .exercise: return "時間"
+        case .sleep: return "時間"
+        case .work: return "時長"
+        case .relationship: return "時長"
+        case .study: return "時長"
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Label(type.rawValue, systemImage: type.icon)
+                    .font(.system(size: titleFontSize))
+                    .fontWeight(.bold)
+                    .foregroundColor(Color.fromString(titleFontColor))
+                Spacer()
+                Button(action: onAdd) {
+                    Label("新增", systemImage: "plus.circle.fill")
+                        .font(.system(size: contentFontSize))
+                        .foregroundColor(.blue)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            Table(entries) {
+                TableColumn(nameLabel) { entry in
+                    Text(entry.name)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.system(size: contentFontSize))
+                        .foregroundColor(Color.fromString(contentFontColor))
+                }
+                TableColumn(categoryLabel) { entry in
+                    Text(entry.category)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.system(size: contentFontSize))
+                        .foregroundColor(Color.fromString(contentFontColor))
+                }
+                TableColumn(numberLabel) { entry in
+                    if type == .expense {
+                        Text(String(format: "%.0f", entry.number))
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .font(.system(size: contentFontSize))
+                            .monospacedDigit()
+                            .foregroundColor(Color.fromString(contentFontColor))
+                    } else {
+                        // 時間相關條目顯示為h:mm
+                        Text(formatMinutesToTimeString(Int(entry.number)))
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .font(.system(size: contentFontSize))
+                            .monospacedDigit()
+                            .foregroundColor(Color.fromString(contentFontColor))
+                    }
+                }
+                TableColumn("備注") { entry in
+                    Text(entry.notes)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.system(size: contentFontSize))
+                        .foregroundColor(.secondary)
+                }
+                TableColumn("操作") { entry in
+                    HStack(spacing: 16) {
+                        Button(action: { onEdit(entry) }) {
+                            Image(systemName: "pencil.circle.fill")
+                                .foregroundColor(.blue)
+                                .font(.system(size: contentFontSize))
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Button(action: {
+                            if let index = entries.firstIndex(where: { $0.id == entry.id }) {
+                                onDelete(IndexSet([index]))
+                            }
+                        }) {
+                            Image(systemName: "trash.circle.fill")
+                                .foregroundColor(.red)
+                                .font(.system(size: contentFontSize))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .frame(minHeight: 100)
+            
+            HStack {
+                // 月合计
+                HStack {
+                    Label("月合計: ", systemImage: "calendar")
+                    Group {
+                        switch type {
+                        case .expense:
+                            // 支出：超出月支出上限則顯示紅色和😩表情符號，未超出顯示綠色和😍
+                            let isOverLimit = monthlyTotal > monthlyExpenseLimit
+                            Text(String(format: "%.0f", monthlyTotal))
+                                .monospacedDigit()
+                                .foregroundColor(isOverLimit ? .red : .green)
+                            Text("\(isOverLimit ? "🥵" : "😍") 元")
+                        case .exercise, .sleep, .work, .relationship, .study:
+                            Text(formatMinutesToTimeString(Int(monthlyTotal))).monospacedDigit()
+                            Text(" (\(String(format: "%.0f", monthlyTotal))分鐘)")
+                        }
+                    }
+                }
+                .font(.system(size: contentFontSize))
+                
+                Spacer()
+                
+                // 小计
+                HStack {
+                    Label("小計: ", systemImage: "sum")
+                    Group {
+                        switch type {
+                        case .expense:
+                            Text(String(format: "%.0f", total)).monospacedDigit()
+                            Text(" 元")
+                        case .exercise:
+                            // 運動：達到或超過每日目標顯示綠色和😍，未達到顯示紅色和🥵
+                            let isGoalMet = total >= dailyExerciseGoal
+                            Text(formatMinutesToTimeString(Int(total)))
+                                .monospacedDigit()
+                                .foregroundColor(isGoalMet ? .green : .red)
+                            Text("\(isGoalMet ? "😍" : "🥵") (\(String(format: "%.0f", total))分鐘)")
+                        case .sleep:
+                            // 睡眠：達到或超過每日目標顯示綠色和😍，未達到顯示紅色和🥵
+                            let isGoalMet = total >= dailySleepGoal
+                            Text(formatMinutesToTimeString(Int(total)))
+                                .monospacedDigit()
+                                .foregroundColor(isGoalMet ? .green : .red)
+                            Text("\(isGoalMet ? "😍" : "🥵") (\(String(format: "%.0f", total))分鐘)")
+                        case .work:
+                            // 工作：達到或超過每日目標顯示綠色和😍，未達到顯示紅色和🥵
+                            let isGoalMet = total >= dailyWorkGoal
+                            Text(formatMinutesToTimeString(Int(total)))
+                                .monospacedDigit()
+                                .foregroundColor(isGoalMet ? .green : .red)
+                            Text("\(isGoalMet ? "😍" : "🥵") (\(String(format: "%.0f", total))分鐘)")
+                        case .relationship:
+                            // 關係：達到或超過每日目標顯示綠色和😍，未達到顯示紅色和🥵
+                            let isGoalMet = total >= dailyRelationshipGoal
+                            Text(formatMinutesToTimeString(Int(total)))
+                                .monospacedDigit()
+                                .foregroundColor(isGoalMet ? .green : .red)
+                            Text("\(isGoalMet ? "😍" : "🥵") (\(String(format: "%.0f", total))分鐘)")
+                        case .study:
+                            // 學習：達到或超過每日目標顯示綠色和😍，未達到顯示紅色和🥵
+                            let isGoalMet = total >= dailyStudyGoal
+                            Text(formatMinutesToTimeString(Int(total)))
+                                .monospacedDigit()
+                                .foregroundColor(isGoalMet ? .green : .red)
+                            Text("\(isGoalMet ? "😍" : "🥵") (\(String(format: "%.0f", total))分鐘)")
+                        }
+                    }
+                }
+                .font(.system(size: contentFontSize))
+            }
+            .padding(.top, 8)
+        }
+        .padding()
+    }
+}
+
+// MARK: - 備份數據結構
+/// 用於備份的數據結構
+struct DiaryBackup: Codable {
+    var entries: [DiaryBackupEntry]
+    
+    struct DiaryBackupEntry: Codable {
+        var id: UUID
+        var date: Date
+        var weatherRaw: String
+        var thoughts: String
+        var temperature: String
+        var expenses: [CategoryBackupEntry]
+        var exercises: [CategoryBackupEntry]
+        var sleeps: [CategoryBackupEntry]
+        var works: [CategoryBackupEntry]
+        var relationships: [CategoryBackupEntry]
+        var studies: [CategoryBackupEntry]
+    }
+    
+    struct CategoryBackupEntry: Codable {
+        var id: UUID
+        var typeRaw: String
+        var name: String
+        var category: String
+        var number: Double
+        var notes: String
+    }
+}
+
+// MARK: - 主視圖
+/// 應用程序的主視圖，包含日記列表和詳細內容
+struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \DiaryEntry.date, order: .reverse) private var diaries: [DiaryEntry]
+    
+    @State private var searchText = ""
+    @State private var showSearchField = false
+    @State private var selectedDiary: DiaryEntry?
+    @State private var selectedDate = Date()
+    @State private var selectedTab: String? = "主页"
+    @State private var isExporting = false
+    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @State private var endDate = Date()
+    @State private var showingDateRangeSheet = false
+    @State private var showingPreferencesSheet = false
+    @State private var showingHelpSheet = false
+    @State private var showingNewDiarySheet = false
+    @State private var showingBackupSelectionSheet = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    @State private var showingAlert = false
+    
+    // 用戶偏好設置
+    @AppStorage("titleFontSize") private var titleFontSize: Double = 22
+    @AppStorage("contentFontSize") private var contentFontSize: Double = 16
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    // 搜尋結果結構
+    struct SearchResult: Identifiable {
+        let id = UUID()
+        let diary: DiaryEntry
+        let fieldName: String
+        let matchText: String
+        let matchLocation: String // 描述匹配位置，如 "記事" 或 "支出記錄-名稱"
+    }
+    
+    // 搜尋功能
+    @State private var searchResults: [SearchResult] = []
+    @State private var currentResultIndex: Int = -1
+    
+    // 只基于日期过滤日记，忽略搜索文本
+    private var filteredDiaries: [DiaryEntry] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        return diaries.filter { diary in
+            diary.date >= startOfDay && diary.date < endOfDay
+        }
+    }
+    
+    // 執行搜尋
+    private func performSearch() {
+        guard !searchText.isEmpty else {
+            searchResults = []
+            currentResultIndex = -1
+            return
+        }
+        
+        var results: [SearchResult] = []
+        
+        for diary in diaries {
+            // 搜尋日期
+            let dateString = diary.date.formatted(date: .abbreviated, time: .omitted)
+            if dateString.localizedCaseInsensitiveContains(searchText) {
+                results.append(SearchResult(diary: diary, fieldName: "日期", matchText: dateString, matchLocation: "基本信息"))
+            }
+            
+            // 搜尋天氣
+            let weatherString = diary.weather.rawValue
+            if weatherString.localizedCaseInsensitiveContains(searchText) {
+                results.append(SearchResult(diary: diary, fieldName: "天氣", matchText: weatherString, matchLocation: "基本信息"))
+            }
+            
+            // 搜尋溫度信息
+            if diary.temperature.localizedCaseInsensitiveContains(searchText) {
+                results.append(SearchResult(diary: diary, fieldName: "溫度", matchText: diary.temperature, matchLocation: "基本信息"))
+            }
+            
+            // 搜尋記事
+            if diary.thoughts.localizedCaseInsensitiveContains(searchText) {
+                results.append(SearchResult(diary: diary, fieldName: "記事", matchText: diary.thoughts, matchLocation: "基本信息"))
+            }
+            
+            // 搜尋支出記錄
+            for entry in diary.expenses {
+                if searchEntryFields(entry, in: diary, categoryType: .expense, results: &results) {
+                    // 匹配已添加到结果中
+                }
+            }
+            
+            // 搜尋運動記錄
+            for entry in diary.exercises {
+                if searchEntryFields(entry, in: diary, categoryType: .exercise, results: &results) {
+                    // 匹配已添加到结果中
+                }
+            }
+            
+            // 搜尋睡眠記錄
+            for entry in diary.sleeps {
+                if searchEntryFields(entry, in: diary, categoryType: .sleep, results: &results) {
+                    // 匹配已添加到结果中
+                }
+            }
+            
+            // 搜尋工作記錄
+            for entry in diary.works {
+                if searchEntryFields(entry, in: diary, categoryType: .work, results: &results) {
+                    // 匹配已添加到结果中
+                }
+            }
+            
+            // 搜尋關係記錄
+            for entry in diary.relationships {
+                if searchEntryFields(entry, in: diary, categoryType: .relationship, results: &results) {
+                    // 匹配已添加到结果中
+                }
+            }
+            
+            // 搜尋學習記錄
+            for entry in diary.studies {
+                if searchEntryFields(entry, in: diary, categoryType: .study, results: &results) {
+                    // 匹配已添加到结果中
+                }
+            }
+        }
+        
+        searchResults = results
+        currentResultIndex = results.isEmpty ? -1 : 0
+        
+        // 如果有搜尋結果，導航到第一個結果
+        navigateToCurrentResult()
+    }
+    
+    // 搜尋單個條目的各個字段
+    private func searchEntryFields(_ entry: CategoryEntry, in diary: DiaryEntry, categoryType: DiaryEntryType, results: inout [SearchResult]) -> Bool {
+        var foundMatch = false
+        let categoryName = categoryType.rawValue
+        
+        // 搜尋名稱字段
+        if entry.name.localizedCaseInsensitiveContains(searchText) {
+            results.append(SearchResult(
+                diary: diary,
+                fieldName: "名稱",
+                matchText: entry.name,
+                matchLocation: "\(categoryName)-\(entry.name)"
+            ))
+            foundMatch = true
+        }
+        
+        // 搜尋類別字段
+        if entry.category.localizedCaseInsensitiveContains(searchText) {
+            results.append(SearchResult(
+                diary: diary,
+                fieldName: "類別",
+                matchText: entry.category,
+                matchLocation: "\(categoryName)-\(entry.name)"
+            ))
+            foundMatch = true
+        }
+        
+        // 搜尋備注字段
+        if entry.notes.localizedCaseInsensitiveContains(searchText) {
+            results.append(SearchResult(
+                diary: diary,
+                fieldName: "備注",
+                matchText: entry.notes,
+                matchLocation: "\(categoryName)-\(entry.name)"
+            ))
+            foundMatch = true
+        }
+        
+        // 搜尋數字（轉為字符串後搜尋）
+        let numberString = String(format: "%.0f", entry.number)
+        if numberString.localizedCaseInsensitiveContains(searchText) {
+            results.append(SearchResult(
+                diary: diary,
+                fieldName: "數量",
+                matchText: numberString,
+                matchLocation: "\(categoryName)-\(entry.name)"
+            ))
+            foundMatch = true
+        }
+        
+        return foundMatch
+    }
+    
+    // 向上搜尋
+    private func searchUp() {
+        guard !searchResults.isEmpty else { return }
+        
+        if currentResultIndex > 0 {
+            currentResultIndex -= 1
+        } else {
+            // 循環回到最後一個結果
+            currentResultIndex = searchResults.count - 1
+        }
+        
+        navigateToCurrentResult()
+    }
+    
+    // 向下搜尋
+    private func searchDown() {
+        guard !searchResults.isEmpty else { return }
+        
+        if currentResultIndex < searchResults.count - 1 {
+            currentResultIndex += 1
+        } else {
+            // 循環回到第一個結果
+            currentResultIndex = 0
+        }
+        
+        navigateToCurrentResult()
+    }
+    
+    // 導航到當前搜尋結果
+    private func navigateToCurrentResult() {
+        guard !searchResults.isEmpty && currentResultIndex >= 0 && currentResultIndex < searchResults.count else { return }
+        
+        let result = searchResults[currentResultIndex]
+        selectedDiary = result.diary
+        selectedDate = result.diary.date
+        
+        // 根據結果類型設置適當的選項卡
+        switch result.matchLocation.split(separator: "-").first?.trimmingCharacters(in: .whitespaces) {
+        case "支出記錄", "支出":
+            selectedTab = "支出"
+        case "運動記錄", "運動":
+            selectedTab = "運動"
+        case "睡眠記錄", "睡眠":
+            selectedTab = "睡眠"
+        case "工作記錄", "工作":
+            selectedTab = "工作"
+        case "關係記錄", "關係":
+            selectedTab = "關係"
+        case "學習記錄", "學習":
+            selectedTab = "學習"
+        default:
+            selectedTab = "主页"
+        }
+    }
+    
+    // 切換搜尋欄位可見性
+    private func toggleSearchField() {
+        showSearchField.toggle()
+        if !showSearchField {
+            searchText = ""
+            searchResults = []
+            currentResultIndex = -1
+        }
+    }
+
+    var body: some View {
+        NavigationSplitView {
+            VStack {
+                // 日期選擇器部分
+                HStack {
+                    Text("選擇日期")
+                        .font(.system(size: titleFontSize))
+                        .foregroundColor(Color.fromString(titleFontColor))
+                    Spacer()
+                    
+                    // 條件顯示"新增"按鈕 - 當該日期沒有日記記錄時顯示
+                    if filteredDiaries.isEmpty {
+                        Button(action: {
+                            createDiaryForSelectedDate()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("新增")
+                            }
+                            .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.borderless)
+                        .customCursor(.pointingHand)
+                        .help("為選擇的日期創建新日記")
+                        .padding(.trailing, 8)
+                    }
+                    
+                    CustomDatePickerView(
+                        selectedDate: $selectedDate,
+                        titleFontColor: titleFontColor,
+                        contentFontColor: contentFontColor,
+                        selectedDiary: $selectedDiary
+                    )
+                    .help("選擇要查看的日期")
+                }
+                .padding(.horizontal)
+                .padding(.top, 10)
+                
+                // 搜尋欄位（當 showSearchField 為 true 時顯示）
+                if showSearchField {
+                    VStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.secondary)
+                            
+                            TextField("搜尋日記內容...", text: $searchText)
+                                .textFieldStyle(.plain)
+                                .onSubmit {
+                                    performSearch()
+                                }
+                            
+                            Button(action: {
+                                searchText = ""
+                                searchResults = []
+                                currentResultIndex = -1
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                            }
+                            .buttonStyle(.borderless)
+                            .opacity(searchText.isEmpty ? 0 : 1)
+                        }
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(NSColor.textBackgroundColor))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        
+                        HStack {
+                            // 顯示搜尋結果計數
+                            if !searchResults.isEmpty {
+                                Text("找到 \(searchResults.count) 個結果 (當前: \(currentResultIndex + 1)/\(searchResults.count))")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 8) {
+                                Button(action: searchUp) {
+                                    Image(systemName: "chevron.up")
+                                        .frame(width: 24, height: 24)
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(searchResults.isEmpty)
+                                
+                                Button(action: searchDown) {
+                                    Image(systemName: "chevron.down")
+                                        .frame(width: 24, height: 24)
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(searchResults.isEmpty)
+                                
+                                Button(action: performSearch) {
+                                    Text("搜尋")
+                                        .font(.caption)
+                                }
+                                .disabled(searchText.isEmpty)
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 4)
+                }
+                
+                List(filteredDiaries) { diary in
+                    DiaryRowView(diary: diary)
+                        .onTapGesture {
+                            selectedDiary = diary
+                        }
+                        .customCursor(.pointingHand)
+                        .help("查看日記詳細內容")
+                        .contextMenu {
+                            Button(action: {
+                                deleteEntry(diary)
+                            }) {
+                                Label("刪除", systemImage: "trash")
+                            }
+                        }
+                }
+                .contextMenu {
+                    Button(action: {
+                        showingNewDiarySheet = true
+                    }) {
+                        Label("新增日記", systemImage: "plus")
+                    }
+                    
+                    Button(action: {
+                        createDiaryForSelectedDate()
+                    }) {
+                        Label("新增今日日記", systemImage: "calendar.badge.plus")
+                    }
+                }
+            }
+            .navigationTitle("日記列表")
+            .modifier(ListToolbarModifier(
+                toggleSearchField: toggleSearchField,
+                showSearchField: showSearchField,
+                switchToToday: switchToToday,
+                isExporting: $isExporting,
+                showingDateRangeSheet: $showingDateRangeSheet,
+                showingPreferencesSheet: $showingPreferencesSheet,
+                showingHelpSheet: $showingHelpSheet,
+                showingNewDiarySheet: $showingNewDiarySheet,
+                showingBackupSelectionSheet: $showingBackupSelectionSheet
+            ))
+            .searchable(text: $searchText, isPresented: $showSearchField, prompt: "搜尋日記...")
+        } detail: {
+            if let diary = selectedDiary {
+                DiaryDetailView(diary: diary, selectedTab: $selectedTab)
+            } else {
+                Text("請選擇一篇日記")
+                    .font(.title)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .onChange(of: selectedDate) { oldDate, newDate in
+            // 當日期變更時，更新 selectedDiary
+            logInfo("日期變更: \(oldDate.formatted()) -> \(newDate.formatted())")
+            
+            let calendar = Calendar.current
+            let startOfDay = calendar.startOfDay(for: newDate)
+            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+            
+            do {
+                // 清除當前選擇的 diary (避免狀態殘留)
+                selectedDiary = nil
+                
+                // 獲取所有日記
+                let allDiaries = try modelContext.fetch(FetchDescriptor<DiaryEntry>())
+                
+                // 手動過濾當天的日記
+                let diariesForSelectedDate = allDiaries.filter { diary in
+                    let diaryDate = diary.date
+                    return diaryDate >= startOfDay && diaryDate < endOfDay
+                }
+                
+                let oldDiaryId = selectedDiary?.id
+                
+                if let newDiary = diariesForSelectedDate.first {
+                    logInfo("找到日期為 \(newDate.formatted()) 的日記，ID: \(newDiary.id)")
+                    // 顯示日記內容的詳細資訊，便於診斷
+                    logInfo("日記內容 - 天氣: \(newDiary.weather.rawValue), 記事長度: \(newDiary.thoughts.count) 字符")
+                    if !newDiary.thoughts.isEmpty {
+                        logInfo("日記記事預覽: \"\(newDiary.thoughts.prefix(50))...\"")
+                    } else {
+                        logInfo("日記記事為空")
+                    }
+                    
+                    // 直接使用過濾到的日記
+                    selectedDiary = newDiary
+                    logInfo("已設置 selectedDiary: ID = \(selectedDiary?.id.uuidString ?? "nil"), 記事長度 = \(selectedDiary?.thoughts.count ?? 0)")
+                } else {
+                    logInfo("未找到日期為 \(newDate.formatted()) 的日記")
+                    selectedDiary = nil
+                }
+                
+                if oldDiaryId != selectedDiary?.id {
+                    logInfo("日記變更: \(oldDiaryId?.uuidString ?? "nil") -> \(selectedDiary?.id.uuidString ?? "nil")")
+                }
+            } catch {
+                logInfo("查詢日記失敗: \(error)")
+                selectedDiary = nil
+            }
+        }
+        .sheet(isPresented: $showingDateRangeSheet) {
+            NavigationView {
+                VStack(spacing: 20) {
+                    Text("匯出備份")
+                        .font(.headline)
+                        .padding(.top, 20)
+                    
+                    Form {
+                        Section(header: Text("選擇日期範圍")) {
+                            HStack {
+                                Text("開始日期")
+                                    .frame(minWidth: 80, alignment: .leading)
+                                Spacer()
+                                CustomDatePickerView(
+                                    selectedDate: $startDate,
+                                    titleFontColor: titleFontColor,
+                                    contentFontColor: contentFontColor
+                                )
+                            }
+                            .padding(.vertical, 5)
+                            
+                            HStack {
+                                Text("結束日期")
+                                    .frame(minWidth: 80, alignment: .leading)
+                                Spacer()
+                                CustomDatePickerView(
+                                    selectedDate: $endDate,
+                                    titleFontColor: titleFontColor,
+                                    contentFontColor: contentFontColor
+                                )
+                            }
+                            .padding(.vertical, 5)
+                        }
+                    }
+                    
+                    HStack(spacing: 30) {
+                        Button("取消") {
+                            showingDateRangeSheet = false
+                        }
+                        
+                        Button("確定") {
+                            showingDateRangeSheet = false
+                            exportData()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(.bottom, 20)
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .frame(width: 400, height: 320)
+        }
+        .alert(isPresented: $showingAlert) {
+            Alert(
+                title: Text(alertTitle),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("確定"))
+            )
+        }
+        .onAppear {
+            // 初始化時，自動切換到今日日記
+            switchToToday()
+        }
+        .sheet(isPresented: $showingNewDiarySheet) {
+            NewDiaryView()
+        }
+        .sheet(isPresented: $showingPreferencesSheet) {
+            PreferencesView()
+                .frame(width: 600, height: 700)
+        }
+        .sheet(isPresented: $showingHelpSheet) {
+            HelpView()
+                .frame(width: 800, height: 600)
+        }
+        .sheet(isPresented: $showingBackupSelectionSheet) {
+            BackupSelectionView(restoreSelectedEntries: { url, selectedIds in
+                // 使用新的 restoreBackup 方法替換原來的方法
+                restoreBackup(from: url)
+            })
+        }
+    }
+    
+    /// 將指定日期範圍內的日記條目轉換為備份格式
+    private func createBackup(from: Date, to: Date) -> DiaryBackup {
+        let calendar = Calendar.current
+        let filteredDiaries = diaries.filter { diary in
+            let diaryDate = calendar.startOfDay(for: diary.date)
+            let fromDate = calendar.startOfDay(for: from)
+            let toDate = calendar.startOfDay(for: to.addingTimeInterval(24*60*60))  // 加一天，使得結束日期包含在內
+            return diaryDate >= fromDate && diaryDate < toDate
+        }
+        
+        let entries = filteredDiaries.map { diary in
+            DiaryBackup.DiaryBackupEntry(
+                id: diary.id,
+                date: diary.date,
+                weatherRaw: diary.weather.rawValue,
+                thoughts: diary.thoughts,
+                temperature: diary.temperature,
+                expenses: diary.expenses.map { convertToBackupEntry($0) },
+                exercises: diary.exercises.map { convertToBackupEntry($0) },
+                sleeps: diary.sleeps.map { convertToBackupEntry($0) },
+                works: diary.works.map { convertToBackupEntry($0) },
+                relationships: diary.relationships.map { convertToBackupEntry($0) },
+                studies: diary.studies.map { convertToBackupEntry($0) }
+            )
+        }
+        return DiaryBackup(entries: entries)
+    }
+    
+    /// 將分類條目轉換為備份格式
+    private func convertToBackupEntry(_ entry: CategoryEntry) -> DiaryBackup.CategoryBackupEntry {
+        DiaryBackup.CategoryBackupEntry(
+            id: entry.id,
+            typeRaw: entry.typeRaw,
+            name: entry.name,
+            category: entry.category,
+            number: entry.number,
+            notes: entry.notes
+        )
+    }
+    
+    /// 從備份數據創建分類條目
+    private func createCategoryEntry(_ backup: DiaryBackup.CategoryBackupEntry, type: DiaryEntryType) -> CategoryEntry {
+        let entry = CategoryEntry(type: type,
+                                name: backup.name,
+                                category: backup.category,
+                                number: backup.number,
+                                notes: backup.notes)
+        entry.id = backup.id
+        return entry
+    }
+    
+    /// 匯出數據
+    private func exportData() {
+        // 使用應用程序的文檔目錄，而不是桌面
+        do {
+            // 獲取範圍內的日記條目
+            let diariesInRange = diaries.filter { diary in
+                diary.date >= startDate && diary.date <= endDate
+            }
+            
+            if diariesInRange.isEmpty {
+                alertTitle = "匯出失敗"
+                alertMessage = "所選日期範圍內沒有日記資料。"
+                showingAlert = true
+                showingDateRangeSheet = false
+                return
+            }
+            
+            print("開始匯出 \(diariesInRange.count) 篇日記...")
+            
+            // 創建備份數據
+            let entries = diariesInRange.map { diary -> DiaryBackup.DiaryBackupEntry in
+                // 按类型分类
+                let expenseEntries = diary.expenses.map { convertToBackupEntry($0) }
+                let exerciseEntries = diary.exercises.map { convertToBackupEntry($0) }
+                let sleepEntries = diary.sleeps.map { convertToBackupEntry($0) }
+                let workEntries = diary.works.map { convertToBackupEntry($0) }
+                let relationshipEntries = diary.relationships.map { convertToBackupEntry($0) }
+                let studyEntries = diary.studies.map { convertToBackupEntry($0) }
+                
+                return DiaryBackup.DiaryBackupEntry(
+                    id: diary.id,
+                    date: diary.date,
+                    weatherRaw: diary.weather.rawValue,
+                    thoughts: diary.thoughts,
+                    temperature: diary.temperature,
+                    expenses: expenseEntries,
+                    exercises: exerciseEntries,
+                    sleeps: sleepEntries,
+                    works: workEntries,
+                    relationships: relationshipEntries,
+                    studies: studyEntries
+                )
+            }
+            
+            let backup = DiaryBackup(entries: entries)
+            
+            // 創建 JSON 編碼器
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            
+            // 嘗試編碼
+            print("開始編碼備份數據...")
+            let data: Data
+            do {
+                data = try encoder.encode(backup)
+                print("成功編碼備份數據，大小: \(data.count) 字節")
+                
+                // 驗證編碼後的數據
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("JSON 前 100 個字符: \(String(jsonString.prefix(100)))")
+                    
+                    // 嘗試解碼回來以驗證格式是否正確
+                    let decoder = JSONDecoder()
+                    decoder.dateDecodingStrategy = .iso8601
+                    do {
+                        let testBackup = try decoder.decode(DiaryBackup.self, from: data)
+                        print("驗證成功: 可以解碼回 \(testBackup.entries.count) 篇日記")
+                    } catch {
+                        print("警告: 編碼的數據無法解碼回來: \(error)")
+                    }
+                }
+            } catch {
+                print("編碼備份數據失敗: \(error)")
+                throw error
+            }
+            
+            // 創建文件名
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd"
+            let fileName = "diary_backup_\(dateFormatter.string(from: startDate))_to_\(dateFormatter.string(from: endDate)).json"
+            
+            // 使用應用程序的文檔目錄
+            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let fileURL = documentsURL.appendingPathComponent(fileName)
+            
+            print("正在保存至: \(fileURL.path)")
+            
+            // 寫入檔案
+            try data.write(to: fileURL)
+            print("備份文件成功保存! 路徑: \(fileURL.path)")
+            print("備份文件大小: \(data.count) 字節")
+
+            // 檢查文件是否確實存在
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                print("已確認文件成功保存在磁盤上")
+                
+                // 檢查文件權限
+                if FileManager.default.isReadableFile(atPath: fileURL.path) {
+                    print("文件權限正確: 可讀")
+                } else {
+                    print("警告: 文件權限問題 - 不可讀")
+                }
+            } else {
+                print("警告: 文件寫入成功但無法在路徑找到文件!")
+            }
+
+            // 通知使用者
+            alertTitle = "匯出成功"
+            alertMessage = "日記備份已保存至文檔目錄：\n\(fileURL.path)\n\n註：您可以在應用程序的文檔目錄中找到這個檔案。"
+        } catch {
+            print("匯出失敗: \(error)")
+            alertTitle = "匯出失敗"
+            alertMessage = "錯誤：\(error.localizedDescription)"
+        }
+        
+        showingAlert = true
+        showingDateRangeSheet = false
+    }
+    
+    /// 匯入數據
+    @available(*, deprecated, message: "使用BackupSelectionView替代")
+    private func importData() {
+        alertTitle = "请使用备份恢复功能"
+        alertMessage = "已更新备份恢复功能，请使用工具栏中的备份恢复按钮(文件夹带下箭头图标)来恢复数据。"
+        showingAlert = true
+        showingDateRangeSheet = false
+        
+        // 旧的实现已被注释掉，保留仅供参考
+        /*
+        do {
+            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd"
+            let startDateString = dateFormatter.string(from: startDate)
+            let endDateString = dateFormatter.string(from: endDate)
+            let backupURL = documentsDirectory.appendingPathComponent("diary_backup_\(startDateString)_\(endDateString).json")
+            let data = try Data(contentsOf: backupURL)
+            let backup = try JSONDecoder().decode(DiaryBackup.self, from: data)
+            
+            // 刪除指定日期範圍內的現有數據
+            let calendar = Calendar.current
+            let diariesToDelete = diaries.filter { diary in
+                let diaryDate = calendar.startOfDay(for: diary.date)
+                let fromDate = calendar.startOfDay(for: startDate)
+                let toDate = calendar.startOfDay(for: endDate.addingTimeInterval(24*60*60))  // 加一天，使得結束日期包含在內
+                return diaryDate >= fromDate && diaryDate < toDate
+            }
+            for diary in diariesToDelete {
+                modelContext.delete(diary)
+            }
+            
+            // 恢復備份數據
+            for backupEntry in backup.entries {
+                let diary = DiaryEntry(date: backupEntry.date,
+                                     weather: WeatherType(rawValue: backupEntry.weatherRaw) ?? .sunny,
+                                     thoughts: backupEntry.thoughts,
+                                     temperature: backupEntry.temperature)
+                diary.id = backupEntry.id
+                
+                diary.expenses = backupEntry.expenses.map { createCategoryEntry($0, type: .expense) }
+                diary.exercises = backupEntry.exercises.map { createCategoryEntry($0, type: .exercise) }
+                diary.sleeps = backupEntry.sleeps.map { createCategoryEntry($0, type: .sleep) }
+                diary.works = backupEntry.works.map { createCategoryEntry($0, type: .work) }
+                diary.relationships = backupEntry.relationships.map { createCategoryEntry($0, type: .relationship) }
+                diary.studies = backupEntry.studies.map { createCategoryEntry($0, type: .study) }
+                
+                modelContext.insert(diary)
+            }
+            
+            try modelContext.save()
+            alertTitle = "匯入成功"
+            alertMessage = "成功恢復 \(backup.entries.count) 篇日記"
+        } catch {
+            alertTitle = "匯入失敗"
+            alertMessage = error.localizedDescription
+        }
+        
+        showingAlert = true
+        */
+    }
+    
+    /// 從備份數據恢復
+    private func restoreFromBackup(_ backup: DiaryBackup) {
+        // 清除現有數據
+        for diary in diaries {
+            modelContext.delete(diary)
+        }
+        
+        // 恢復備份數據
+        for backupEntry in backup.entries {
+            let diary = DiaryEntry(date: backupEntry.date,
+                                 weather: WeatherType(rawValue: backupEntry.weatherRaw) ?? .sunny,
+                                 thoughts: backupEntry.thoughts,
+                                 temperature: backupEntry.temperature)
+            diary.id = backupEntry.id
+            
+            // 恢復分類條目
+            diary.expenses = backupEntry.expenses.map { createCategoryEntry($0, type: .expense) }
+            diary.exercises = backupEntry.exercises.map { createCategoryEntry($0, type: .exercise) }
+            diary.sleeps = backupEntry.sleeps.map { createCategoryEntry($0, type: .sleep) }
+            diary.works = backupEntry.works.map { createCategoryEntry($0, type: .work) }
+            diary.relationships = backupEntry.relationships.map { createCategoryEntry($0, type: .relationship) }
+            diary.studies = backupEntry.studies.map { createCategoryEntry($0, type: .study) }
+            
+            modelContext.insert(diary)
+        }
+        
+        // 保存更改
+        try? modelContext.save()
+    }
+    
+    /// 查找本地所有备份文件
+    private func findLocalBackups() -> [URL] {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileManager = FileManager.default
+        
+        do {
+            // 获取文档目录中的所有文件
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
+            
+            // 过滤出备份文件（.json格式且文件名包含"diary_backup_"）
+            let backupFiles = fileURLs.filter { url in
+                let filename = url.lastPathComponent
+                return filename.hasSuffix(".json") && filename.contains("diary_backup_")
+            }
+            
+            return backupFiles.sorted { $0.lastPathComponent > $1.lastPathComponent }
+        } catch {
+            print("Error finding backup files: \(error)")
+            return []
+        }
+    }
+    
+    /// 从备份文件恢复数据，仅恢复选定的条目，以备份优先
+    private func restoreSelectedEntries(from backupURL: URL, selectedEntryIds: [UUID]) {
+        do {
+            let data = try Data(contentsOf: backupURL)
+            
+            // 创建解码器并设置日期解码策略
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601 // 确保与编码时使用相同的日期策略
+            
+            // 尝试解码前先打印调试信息
+            print("備份文件大小: \(data.count) 字節")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("JSON 前 100 個字符: \(String(jsonString.prefix(100)))")
+            }
+            
+            // 尝试解码
+            let backup: DiaryBackup
+            do {
+                backup = try decoder.decode(DiaryBackup.self, from: data)
+            } catch let decodingError as DecodingError {
+                // 解码失败的更详细信息
+                switch decodingError {
+                case .dataCorrupted(let context):
+                    print("數據損壞: \(context.debugDescription)")
+                case .keyNotFound(let key, let context):
+                    print("找不到鍵 '\(key.stringValue)': \(context.debugDescription)")
+                case .typeMismatch(let type, let context):
+                    print("類型不匹配 \(type): \(context.debugDescription)")
+                case .valueNotFound(let type, let context):
+                    print("找不到值 \(type): \(context.debugDescription)")
+                @unknown default:
+                    print("未知解碼錯誤")
+                }
+                throw decodingError
+            }
+            
+            // 解码成功后继续处理
+            print("成功解码备份，包含 \(backup.entries.count) 条日记")
+            
+            // 过滤出选定的条目
+            let selectedEntries: [DiaryBackup.DiaryBackupEntry]
+            if selectedEntryIds.isEmpty {
+                // 如果没有指定ID，恢复所有条目
+                selectedEntries = backup.entries
+            } else {
+                // 否则只恢复选定的条目
+                selectedEntries = backup.entries.filter { backupEntry in
+                    selectedEntryIds.contains(backupEntry.id)
+                }
+            }
+            
+            // 查找现有日记中与选定备份日记相同日期的条目
+            let calendar = Calendar.current
+            for backupEntry in selectedEntries {
+                // 查找同一日期的现有日记
+                let backupEntryStartOfDay = calendar.startOfDay(for: backupEntry.date)
+                let backupEntryEndOfDay = calendar.date(byAdding: .day, value: 1, to: backupEntryStartOfDay)!
+                
+                let existingDiary = diaries.first { diary in
+                    let diaryDate = diary.date
+                    return diaryDate >= backupEntryStartOfDay && diaryDate < backupEntryEndOfDay
+                }
+                
+                if let existingDiary = existingDiary {
+                    // 如果找到同日期的日记，删除现有的并插入备份的
+                    modelContext.delete(existingDiary)
+                }
+                
+                // 创建并插入备份日记
+                let diary = DiaryEntry(date: backupEntry.date,
+                                     weather: WeatherType(rawValue: backupEntry.weatherRaw) ?? .sunny,
+                                     thoughts: backupEntry.thoughts,
+                                     temperature: backupEntry.temperature)
+                diary.id = backupEntry.id
+                
+                diary.expenses = backupEntry.expenses.map { createCategoryEntry($0, type: .expense) }
+                diary.exercises = backupEntry.exercises.map { createCategoryEntry($0, type: .exercise) }
+                diary.sleeps = backupEntry.sleeps.map { createCategoryEntry($0, type: .sleep) }
+                diary.works = backupEntry.works.map { createCategoryEntry($0, type: .work) }
+                diary.relationships = backupEntry.relationships.map { createCategoryEntry($0, type: .relationship) }
+                diary.studies = backupEntry.studies.map { createCategoryEntry($0, type: .study) }
+                
+                modelContext.insert(diary)
+            }
+            
+            try modelContext.save()
+            alertTitle = "恢复成功"
+            alertMessage = "已成功恢复选定的 \(selectedEntries.count) 篇日记"
+            showingAlert = true
+        } catch {
+            print("恢復失敗: \(error.localizedDescription)")
+            alertTitle = "恢复失败"
+            alertMessage = "错误：\(error.localizedDescription)"
+            showingAlert = true
+        }
+    }
+    
+    /// 切换到今日日记，如果不存在则创建
+    private func switchToToday() {
+        let today = Date()
+        let calendar = Calendar.current
+        
+        // 檢查是否已存在今日日記
+        if let existingDiary = diaries.first(where: { calendar.isDateInToday($0.date) }) {
+            // 已有今日日記，選中它
+            selectedDiary = existingDiary
+            selectedDate = existingDiary.date
+        } else {
+            // 沒有今日日記，創建新的
+            let newDiary = DiaryEntry(date: today, weather: .sunny, thoughts: "")
+            modelContext.insert(newDiary)
+            try? modelContext.save()
+            selectedDiary = newDiary
+            selectedDate = today
+        }
+    }
+    
+    func deleteEntry(_ diary: DiaryEntry) {
+        // 如果要刪除的是當前選中的日記，先清空選中狀態
+        if selectedDiary?.id == diary.id {
+            selectedDiary = nil
+        }
+        
+        // 從數據庫中刪除日記
+        modelContext.delete(diary)
+        
+        // 嘗試保存更改
+        do {
+            try modelContext.save()
+            logInfo("成功刪除日記")
+        } catch {
+            logInfo("刪除日記時出錯: \(error)")
+        }
+    }
+    
+    /// 為選擇的日期創建新日記
+    private func createDiaryForSelectedDate() {
+        logInfo("為日期 \(selectedDate.formatted()) 創建新日記")
+        
+        // 創建新日記
+        let newDiary = DiaryEntry(date: selectedDate, weather: .sunny, thoughts: "")
+        modelContext.insert(newDiary)
+        
+        do {
+            try modelContext.save()
+            logInfo("成功創建新日記，ID: \(newDiary.id)")
+            
+            // 設置為當前選中的日記
+            selectedDiary = newDiary
+        } catch {
+            logInfo("創建日記失敗: \(error)")
+        }
+    }
+    
+    private func restoreBackup(from backupURL: URL, filterByDate: (Date, Date)? = nil) {
+        print("開始從 \(backupURL.path) 恢復備份")
+        
+        do {
+            let data = try Data(contentsOf: backupURL)
+            
+            // 解碼器設定
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            print("備份文件大小: \(data.count) 字節")
+            
+            // 嘗試解碼
+            let backup: DiaryBackup
+            do {
+                backup = try decoder.decode(DiaryBackup.self, from: data)
+                print("成功解碼備份，包含 \(backup.entries.count) 條日記")
+            } catch {
+                print("備份文件解碼失敗: \(error)")
+                alertTitle = "恢復失敗"
+                alertMessage = "備份文件格式無效: \(error.localizedDescription)"
+                showingAlert = true
+                return
+            }
+            
+            // 篩選日期範圍內的條目
+            var entriesToRestore = backup.entries
+            
+            if let (startDate, endDate) = filterByDate {
+                entriesToRestore = backup.entries.filter { entry in
+                    entry.date >= startDate && entry.date <= endDate
+                }
+            }
+            
+            // 檢查是否有找到條目
+            guard !entriesToRestore.isEmpty else {
+                alertTitle = "恢復失敗"
+                alertMessage = "沒有找到符合條件的日記條目"
+                showingAlert = true
+                return
+            }
+            
+            print("將恢復 \(entriesToRestore.count) 條日記")
+            
+            // 刪除重疊日期的現有條目
+            let calendar = Calendar.current
+            for backupEntry in entriesToRestore {
+                let backupEntryStartOfDay = calendar.startOfDay(for: backupEntry.date)
+                let backupEntryEndOfDay = calendar.date(byAdding: .day, value: 1, to: backupEntryStartOfDay)!
+                
+                let existingDiary = diaries.first { diary in
+                    let diaryDate = diary.date
+                    return diaryDate >= backupEntryStartOfDay && diaryDate < backupEntryEndOfDay
+                }
+                
+                if let existingDiary = existingDiary {
+                    print("刪除現有的日記: \(existingDiary.id)")
+                    modelContext.delete(existingDiary)
+                }
+                
+                // 創建並插入備份日記
+                let diary = DiaryEntry(date: backupEntry.date,
+                                     weather: WeatherType(rawValue: backupEntry.weatherRaw) ?? .sunny,
+                                     thoughts: backupEntry.thoughts,
+                                     temperature: backupEntry.temperature)
+                diary.id = backupEntry.id
+                
+                diary.expenses = backupEntry.expenses.map { createCategoryEntry($0, type: .expense) }
+                diary.exercises = backupEntry.exercises.map { createCategoryEntry($0, type: .exercise) }
+                diary.sleeps = backupEntry.sleeps.map { createCategoryEntry($0, type: .sleep) }
+                diary.works = backupEntry.works.map { createCategoryEntry($0, type: .work) }
+                diary.relationships = backupEntry.relationships.map { createCategoryEntry($0, type: .relationship) }
+                diary.studies = backupEntry.studies.map { createCategoryEntry($0, type: .study) }
+                
+                modelContext.insert(diary)
+            }
+            
+            // 保存更改
+            do {
+                try modelContext.save()
+                alertTitle = "恢復成功"
+                alertMessage = "已成功恢復 \(entriesToRestore.count) 篇日記"
+                showingAlert = true
+            } catch {
+                print("保存恢復的日記時出錯: \(error)")
+                alertTitle = "恢復失敗"
+                alertMessage = "保存恢復的日記時出錯: \(error.localizedDescription)"
+                showingAlert = true
+            }
+        } catch {
+            print("讀取備份文件時出錯: \(error)")
+            alertTitle = "恢復失敗"
+            alertMessage = "讀取備份文件時出錯: \(error.localizedDescription)"
+            showingAlert = true
+        }
+    }
+}
+
+// MARK: - 新日記視圖
+/// 創建新日記的視圖
+struct NewDiaryView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @State private var date = Date()
+    @State private var weather = WeatherType.sunny
+    @State private var thoughts = ""
+    
+    // 添加字体颜色设置
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                // 使用自定义日期选择器
+                HStack {
+                    Text("日期")
+                        .font(.system(size: 20))
+                    Spacer()
+                    CustomDatePickerView(
+                        selectedDate: $date,
+                        titleFontColor: titleFontColor,
+                        contentFontColor: contentFontColor
+                    )
+                    .help("選擇要查看的日期")
+                }
+                .padding(.vertical, 5)
+                
+                Section("天氣") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 15) {
+                            ForEach(WeatherType.allCases, id: \.self) { type in
+                                VStack {
+                                    Image(systemName: type.icon)
+                                        .font(.system(size: 22))
+                                        .foregroundColor(weather == type ? .blue : .gray)
+                                        .padding(8)
+                                        .background(
+                                            Circle()
+                                                .fill(weather == type ? Color.blue.opacity(0.2) : Color.clear)
+                                        )
+                                    Text(type.rawValue)
+                                        .font(.system(size: 20))
+                                }
+                                .onTapGesture {
+                                    weather = type
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 80)
+                }
+                
+                Section("記事") {
+                    EnhancedTextEditor(text: $thoughts)
+                        .frame(height: 200)
+                }
+            }
+            .navigationTitle("新增日記")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        let newDiary = DiaryEntry(date: date, weather: weather, thoughts: thoughts)
+                        modelContext.insert(newDiary)
+                        try? modelContext.save()
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 日記詳細視圖
+/// 顯示日記詳細內容的視圖
+struct DiaryDetailView: View {
+    var diary: DiaryEntry  // 使用普通變量，而非 ObservedObject
+    @State private var selectedTab: Int = 0
+    @Binding var externalSelectedTab: String?
+    @State private var thoughts: String
+    @State private var isLoading: Bool = false
+    @State private var isOnline: Bool = false
+    @State private var isUpdating: Bool = false
+    @State private var selectedWeather: String
+    @AppStorage("weatherApiKey") private var apiKey: String = "76fb9beb7dd213c17447b2b9080e0bcb"
+    
+    // ⚠️ 這裡的 @AppStorage 宣告與其他視圖重複，考慮創建一個單一共享設定物件
+    @AppStorage("titleFontSize") private var titleFontSize: Double = 22
+    @AppStorage("contentFontSize") private var contentFontSize: Double = 16
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    @State private var showingApiKeyAlert = false
+    @State private var showingLocationAlert = false
+    @State private var locationErrorMessage = ""
+    @Environment(\.modelContext) private var modelContext
+    
+    // 添加動畫狀態
+    @State private var titleScale: Double = 1.0
+    // 追蹤當前顯示的日記ID
+    @State private var currentDiaryId: UUID
+    
+    init(diary: DiaryEntry) {
+        self.diary = diary
+        _selectedWeather = State(initialValue: diary.weather.rawValue)
+        _thoughts = State(initialValue: diary.thoughts)
+        _isOnline = State(initialValue: Calendar.current.isDateInToday(diary.date) && !diary.temperature.isEmpty)
+        _externalSelectedTab = .constant(nil)
+        _currentDiaryId = State(initialValue: diary.id)
+    }
+    
+    init(diary: DiaryEntry, selectedTab: Binding<String?>) {
+        self.diary = diary
+        _selectedWeather = State(initialValue: diary.weather.rawValue)
+        _thoughts = State(initialValue: diary.thoughts)
+        _isOnline = State(initialValue: Calendar.current.isDateInToday(diary.date) && !diary.temperature.isEmpty)
+        _externalSelectedTab = selectedTab
+        _currentDiaryId = State(initialValue: diary.id)
+    }
+    
+    private var weatherService: WeatherService? {
+        if !apiKey.isEmpty {
+            return WeatherService(apiKey: apiKey)
+        }
+        return nil
+    }
+    
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(diary.date)
+    }
+    
+    private func saveContext() {
+        do {
+            try modelContext.save()
+            logInfo("天氣和記事保存成功")
+        } catch {
+            logInfo("保存失敗: \(error)")
+        }
+    }
+    
+    private func updateWeather() {
+        // 添加調試輸出
+        logInfo("準備更新天氣信息...")
+        
+        guard isToday else {
+            isOnline = false
+            diary.temperature = ""
+            saveContext()
+            return
+        }
+        
+        if let service = weatherService {
+            isLoading = true
+            Task {
+                do {
+                    let (weatherType, temp) = try await service.fetchWeather()
+                    await MainActor.run {
+                        selectedWeather = weatherType.rawValue
+                        diary.temperature = temp
+                        diary.weather = weatherType
+                        isOnline = true
+                        
+                        // 添加調試輸出
+                        logInfo("天氣更新成功: \(temp), 類型: \(weatherType.rawValue)")
+                        
+                        saveContext()
+                        isLoading = false
+                    }
+                } catch {
+                    await MainActor.run {
+                        diary.temperature = ""
+                        isOnline = false
+                        isLoading = false
+                        
+                        // 添加調試輸出
+                        logInfo("天氣更新失敗: \(error)")
+                        
+                        let nsError = error as NSError
+                        switch nsError.domain {
+                        case "WeatherService":
+                            switch nsError.code {
+                            case 1:
+                                locationErrorMessage = "請在系統偏好設定中啟用位置服務，並允許應用程序使用位置信息。"
+                            case 2:
+                                locationErrorMessage = "請授予應用程序位置權限以獲取天氣資訊。"
+                            default:
+                                locationErrorMessage = nsError.localizedDescription
+                            }
+                        default:
+                            locationErrorMessage = "獲取天氣資訊失敗，請稍後重試。"
+                        }
+                        showingLocationAlert = true
+                    }
+                }
+            }
+        } else {
+            showingApiKeyAlert = true
+        }
+    }
+    
+    private func switchToManual() {
+        isOnline = false
+        diary.temperature = ""
+        saveContext()
+    }
+    
+    // 刷新視圖狀態，與 diary 保持同步
+    private func refreshViewData() {
+        // 檢查日記 ID 是否變更，確保是新數據
+        if currentDiaryId != diary.id {
+            logInfo("日記已變更，從 ID: \(currentDiaryId) 到 ID: \(diary.id)")
+            currentDiaryId = diary.id
+        }
+        
+        // 無論如何都要更新本地狀態，以確保視圖與模型同步
+        thoughts = diary.thoughts
+        selectedWeather = diary.weather.rawValue
+        isOnline = Calendar.current.isDateInToday(diary.date) && !diary.temperature.isEmpty
+        
+        logInfo("已刷新視圖數據 - 日記ID: \(diary.id), 日期: \(diary.date.formatted()), 天氣: \(diary.weather.rawValue), 記事長度: \(diary.thoughts.count)字符")
+        logInfo("記事內容: \"\(diary.thoughts.prefix(50))...\"")
+    }
+    
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            WeatherAndThoughtsView(
+                diary: diary, 
+                thoughts: $thoughts, 
+                diaryTemperature: diary.temperature, 
+                isToday: isToday, 
+                updateWeather: updateWeather,
+                diaryId: diary.id // 傳遞日記ID，用於檢測變化
+            )
+            .tabItem {
+                Label("基本", systemImage: "house.fill")
+            }
+            .tag(0)
+            
+            // 支出分类
+            CategoryDetailView(type: .expense, diary: diary)
+            .tabItem {
+                Label("支出", systemImage: "dollarsign.circle.fill")
+            }
+            .tag(1)
+            
+            // 運動分类
+            CategoryDetailView(type: .exercise, diary: diary)
+            .tabItem {
+                Label("運動", systemImage: "figure.run.circle.fill")
+            }
+            .tag(2)
+            
+            // 睡眠分类
+            CategoryDetailView(type: .sleep, diary: diary)
+            .tabItem {
+                Label("睡眠", systemImage: "bed.double.circle.fill")
+            }
+            .tag(3)
+            
+            // 工作分类
+            CategoryDetailView(type: .work, diary: diary)
+            .tabItem {
+                Label("工作", systemImage: "briefcase.circle.fill")
+            }
+            .tag(4)
+            
+            // 關係分类
+            CategoryDetailView(type: .relationship, diary: diary)
+            .tabItem {
+                Label("關係", systemImage: "person.2.circle.fill")
+            }
+            .tag(5)
+            
+            // 學習分类
+            CategoryDetailView(type: .study, diary: diary)
+            .tabItem {
+                Label("學習", systemImage: "book.circle.fill")
+            }
+            .tag(6)
+        }
+        .onChange(of: thoughts) { oldValue, newValue in
+            // 添加日誌，檢查記事變更
+            if oldValue != newValue {
+                logInfo("記事變更：從 \(oldValue.count) 字符到 \(newValue.count) 字符")
+                // 將更新後的記事保存到日記物件
+                diary.thoughts = newValue
+                try? modelContext.save()
+            }
+        }
+        .onChange(of: diary.id) { oldId, newId in
+            // 當日記ID變更時，強制更新所有視圖狀態
+            logInfo("⚠️ 日記ID變更觸發，從 \(oldId.uuidString) 到 \(newId.uuidString)")
+            refreshViewData()
+        }
+        // 使用複合ID作為視圖唯一標識，確保視圖會重新創建
+        .id("diary-\(diary.id)-\(diary.date.timeIntervalSince1970)")
+        .onAppear {
+            logInfo("DiaryDetailView出現，日記ID: \(diary.id), 記事: \(diary.thoughts.prefix(20))...")
+            refreshViewData() // 首次出現時刷新數據
+        }
+        .alert("需要API密鑰", isPresented: $showingApiKeyAlert) {
+            Button("確定") { }
+        } message: {
+            Text("請在設定中添加天氣API密鑰以獲取實時天氣資訊。")
+        }
+        .alert("位置服務錯誤", isPresented: $showingLocationAlert) {
+            Button("確定") { }
+        } message: {
+            Text(locationErrorMessage)
+        }
+    }
+}
+
+struct WeatherAndThoughtsView: View {
+    var diary: DiaryEntry  // 使用普通變量，而非 ObservedObject
+    @Binding var thoughts: String
+    let diaryTemperature: String
+    let isToday: Bool
+    let updateWeather: () -> Void
+    let diaryId: UUID  // 追蹤日記ID，用於檢測變化
+    
+    // 新增狀態，控制提醒表單
+    @State private var showingReminderSheet = false
+    @State private var showingEventAlert = false
+    @State private var eventAlertMessage = ""
+    @State private var eventDetails: (title: String, date: Date)? = nil
+    
+    // 使用 onAppear 刷新綁定的數據
+    private func refreshBindings() {
+        // 確保顯示的記事與當前日記同步
+        if thoughts != diary.thoughts {
+            logInfo("WeatherAndThoughtsView: 更新記事內容，從 \(thoughts.count) 字符到 \(diary.thoughts.count) 字符")
+            thoughts = diary.thoughts
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // 將天氣區段抽取為獨立視圖組件，提升更新效率
+            WeatherDisplayView(
+                diary: diary,
+                diaryTemperature: diaryTemperature,
+                isToday: isToday,
+                updateWeather: updateWeather
+            )
+            
+            Divider()
+            
+            VStack(alignment: .leading) {
+                HStack {
+                    Text("記事")
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    // 添加設定提醒的按鈕
+                    Button(action: {
+                        showingReminderSheet = true
+                    }) {
+                        Image(systemName: "bell.badge")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("設定提醒")
+                    
+                    // 添加一個調試按鈕，用於查看當前綁定和日記中的記事內容
+                    Button(action: {
+                        logInfo("調試：當前綁定記事長度: \(thoughts.count) 字符")
+                        logInfo("調試：日記記事長度: \(diary.thoughts.count) 字符")
+                        logInfo("調試：綁定記事前20字符: \"\(thoughts.prefix(20))...\"")
+                        logInfo("調試：日記記事前20字符: \"\(diary.thoughts.prefix(20))...\"")
+                        
+                        // 確保顯示的記事與日記同步
+                        if thoughts != diary.thoughts {
+                            thoughts = diary.thoughts
+                            logInfo("已強制同步記事內容")
+                        }
+                    }) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("測試用：同步記事內容")
+                }
+                
+                EnhancedTextEditor(text: $thoughts)
+                    .frame(minHeight: 200)
+                    .padding(.top, 4)
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+        }
+        .padding()
+        // 使用複合ID作為視圖唯一標識，確保在日記 ID 變化時視圖會重新創建
+        .id("weather-thoughts-\(diaryId)")
+        .onAppear {
+            // 首次出現時確保記事內容已同步
+            logInfo("WeatherAndThoughtsView 出現，日記ID: \(diary.id)")
+            refreshBindings()
+        }
+        .onChange(of: diaryId) { oldId, newId in
+            // 當日記 ID 變化時，確保更新記事內容
+            logInfo("日記 ID 變化: \(oldId) -> \(newId)")
+            refreshBindings()
+        }
+        // 添加提醒表單
+        .sheet(isPresented: $showingReminderSheet) {
+            CustomReminderSheetView(text: $thoughts)
+                .frame(width: 500, height: 450)
+                .presentationDetents([.height(450)])
+        }
+        // 添加自動檢測事件提醒
+        .alert("檢測到日曆事件", isPresented: $showingEventAlert) {
+            Button("取消", role: .cancel) { }
+            Button("創建") {
+                if let details = eventDetails {
+                    CustomCalendarEventHelper.createCalendarEvent(title: details.title, date: details.date) { reminderNote in
+                        if !reminderNote.isEmpty {
+                            thoughts += reminderNote
+                        }
+                    }
+                }
+            }
+        } message: {
+            Text(eventAlertMessage)
+        }
+        .onChange(of: thoughts) { oldValue, newValue in
+            if let details = CustomCalendarEventHelper.extractEventDetails(from: newValue) {
+                eventDetails = details
+                eventAlertMessage = "檢測到可能的日曆事件：\n標題：\(details.title)\n時間：\(details.date.formatted())\n\n是否創建日曆事件？"
+                showingEventAlert = true
+            }
+        }
+    }
+}
+
+// 天氣顯示組件
+struct WeatherDisplayView: View {
+    var diary: DiaryEntry  // 使用普通變量，而非 ObservedObject
+    let diaryTemperature: String
+    let isToday: Bool
+    let updateWeather: () -> Void
+    
+    var body: some View {
+        HStack {
+            Text("天氣")
+                .font(.headline)
+            
+            Spacer()
+            
+            if isToday {
+                Button("更新天氣") {
+                    updateWeather()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+            
+            HStack(spacing: 10) {
+                Image(systemName: diary.weather.icon)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 24))
+                Text(diary.weather.rawValue)
+                
+                if !diary.temperature.isEmpty {
+                    // 使用diaryTemperature來確保每次顯示最新值
+                    Text("(\(diaryTemperature))")
+                        .foregroundColor(.secondary)
+                        .id("temp-\(diaryTemperature)") // 使用唯一ID強制刷新
+                }
+            }
+        }
+        .padding(.horizontal)
+        // 使用複合ID作為視圖唯一標識，確保視圖更新
+        .id("weather-display-\(diary.id)-\(diary.weather.rawValue)-\(diaryTemperature)")
+        .onAppear {
+            // 記錄天氣信息，便於診斷
+            logInfo("WeatherDisplayView 出現，天氣: \(diary.weather.rawValue), 溫度: \(diaryTemperature)")
+        }
+    }
+}
+
+// MARK: - 日記行視圖
+/// 在列表中顯示單個日記條目的視圖
+struct DiaryRowView: View {
+    let diary: DiaryEntry
+    
+    // ⚠️ 這裡的 @AppStorage 宣告在多個視圖中重複出現，考慮創建一個共享設定環境物件
+    @AppStorage("titleFontSize") private var titleFontSize: Double = 22
+    @AppStorage("contentFontSize") private var contentFontSize: Double = 16
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // 日期和天氣
+            HStack {
+                // 日期標題使用與其他標題相同的樣式
+                Text(formatDate(diary.date))
+                    .font(.system(size: titleFontSize))
+                    .foregroundColor(Color.fromString(titleFontColor))
+                Spacer()
+                Image(systemName: diary.weather.icon)
+                    .foregroundColor(.blue)
+                    .font(.system(size: contentFontSize))
+            }
+            
+            // 記事預覽
+            if !diary.thoughts.isEmpty {
+                Text(diary.thoughts)
+                    .lineLimit(2)
+                    .font(.system(size: contentFontSize))
+                    .foregroundColor(Color.fromString(contentFontColor))
+            }
+            
+            // 類別標籤
+            let categories = getCategoryEntries(for: diary)
+            if !categories.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        ForEach(categories) { category in
+                            Label(category.type.rawValue, systemImage: category.type.icon)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    /// 格式化日期為與日期選擇器相同的格式 (yyyy/M/d)
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/M/d"
+        return formatter.string(from: date)
+    }
+    
+    /// 獲取所有類別條目
+    private func getCategoryEntries(for diary: DiaryEntry) -> [CategoryEntry] {
+        var entries: [CategoryEntry] = []
+        entries.append(contentsOf: diary.expenses)
+        entries.append(contentsOf: diary.exercises)
+        entries.append(contentsOf: diary.sleeps)
+        entries.append(contentsOf: diary.works)
+        entries.append(contentsOf: diary.relationships)
+        entries.append(contentsOf: diary.studies)
+        return entries
+    }
+}
+
+// MARK: - Weather Section View
+private struct WeatherSectionView: View {
+    let diary: DiaryEntry
+    @Binding var selectedWeather: String
+    @Binding var isOnline: Bool
+    @Binding var isLoading: Bool
+    let weatherService: WeatherService?
+    let isToday: Bool
+    let titleFontSize: Double
+    let contentFontSize: Double
+    let titleFontColor: String
+    let updateWeather: () -> Void
+    let switchToManual: () -> Void
+    let saveContext: () -> Void
+    
+    // 新增動畫狀態
+    @State private var titleScale: CGFloat = 1.0
+    @State private var isUpdating: Bool = false
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("天氣")
+                    .font(.system(size: titleFontSize))
+                    .foregroundColor(Color.fromString(titleFontColor))
+                    .scaleEffect(titleScale)
+                    .onAppear {
+                        withAnimation(AnimationConstants.springSmall) {
+                            titleScale = 1.05
+                        }
+                        withAnimation(AnimationConstants.springSmall.delay(0.1)) {
+                            titleScale = 1.0
+                        }
+                    }
+                
+                Spacer()
+                
+                if isOnline {
+                    Text(diary.temperature)
+                        .font(.system(size: contentFontSize))
+                        .foregroundColor(.secondary)
+                        .transition(.opacity.combined(with: .scale))
+                        .id("temp-\(diary.temperature)-\(UUID().uuidString)") // 强制刷新
+                    
+                    if weatherService != nil && isToday {
+                        Button(action: {
+                            withAnimation(AnimationConstants.quick) {
+                                isUpdating = true
+                            }
+                            updateWeather()
+                            
+                            // 延遲重置動畫狀態
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                withAnimation(AnimationConstants.quick) {
+                                    isUpdating = false
+                                }
+                            }
+                        }) {
+                            if isLoading {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise.circle.fill")
+                                    .font(.system(size: contentFontSize))
+                                    .foregroundColor(.blue)
+                                    .rotationEffect(.degrees(isUpdating ? 360 : 0))
+                            }
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .customCursor(.pointingHand)
+                        .help("更新天氣資訊")
+                    }
+                    
+                    Button(action: switchToManual) {
+                        Image(systemName: "hand.tap.fill")
+                            .font(.system(size: contentFontSize))
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .customCursor(.pointingHand)
+                    .help("切換到手動選擇天氣")
+                    .transition(.scale.combined(with: .opacity))
+                } else {
+                    if weatherService != nil && isToday {
+                        Button(action: updateWeather) {
+                            if isLoading {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Label("自動更新", systemImage: "cloud.fill")
+                                    .font(.system(size: contentFontSize))
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .customCursor(.pointingHand)
+                        .help("自動獲取當前天氣資訊")
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+            }
+            .animation(AnimationConstants.standard, value: isOnline)
+            .animation(AnimationConstants.standard, value: isLoading)
+            
+            if !isOnline {
+                WeatherTypeSelectionView(
+                    selectedWeather: $selectedWeather,
+                    diary: diary,
+                    contentFontSize: contentFontSize,
+                    saveContext: saveContext
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(AnimationConstants.standard, value: isOnline)
+    }
+}
+
+// MARK: - Weather Type Selection View
+private struct WeatherTypeSelectionView: View {
+    @Binding var selectedWeather: String
+    let diary: DiaryEntry
+    let contentFontSize: Double
+    let saveContext: () -> Void
+    
+    // 添加動畫狀態
+    @State private var animateSelection = false
+    @Namespace private var weatherAnimation
+    
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 15) {
+                ForEach(WeatherType.allCases, id: \.self) { weather in
+                    VStack {
+                        ZStack {
+                            // 當被選中時顯示的背景圓圈
+                            if selectedWeather == weather.rawValue {
+                                Circle()
+                                    .fill(Color.blue.opacity(0.2))
+                                    .matchedGeometryEffect(id: "background", in: weatherAnimation)
+                            }
+                            
+                            Image(systemName: weather.icon)
+                                .font(.system(size: contentFontSize))
+                                .foregroundColor(selectedWeather == weather.rawValue ? .blue : .gray)
+                                .padding(8)
+                        }
+                        .frame(width: 40, height: 40)
+                        
+                        Text(weather.rawValue)
+                            .font(.system(size: contentFontSize))
+                            .foregroundColor(selectedWeather == weather.rawValue ? .primary : .secondary)
+                    }
+                    .onTapGesture {
+                        withAnimation(AnimationConstants.spring) {
+                            selectedWeather = weather.rawValue
+                            diary.weather = weather
+                            animateSelection = true
+                        }
+                        
+                        // 執行一些更多的動畫效果
+                        withAnimation(AnimationConstants.springSmall.delay(0.1)) {
+                            animateSelection = false
+                        }
+                        
+                        saveContext()
+                    }
+                    .scaleEffect(selectedWeather == weather.rawValue && animateSelection ? 1.1 : 1.0)
+                    .customCursor(.pointingHand)
+                    .help("選擇\(weather.rawValue)天氣")
+                }
+            }
+            .padding(.horizontal, 5)
+        }
+        .frame(height: 80)
+        .padding(.vertical, 5)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .cornerRadius(10)
+        .animation(AnimationConstants.standard, value: selectedWeather)
+    }
+}
+
+// MARK: - Thoughts Section View
+private struct ThoughtsSectionView: View {
+    @Binding var thoughts: String
+    let titleFontSize: Double
+    let titleFontColor: String
+    let saveContext: () -> Void
+    let diary: DiaryEntry
+    
+    // 添加動畫狀態
+    @State private var isFocused: Bool = false
+    @State private var showSavedIndicator: Bool = false
+    @State private var appearScale: CGFloat = 0.98
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("記事")
+                    .font(.system(size: titleFontSize))
+                    .foregroundColor(Color.fromString(titleFontColor))
+                
+                Spacer()
+                
+                // 保存指示器 - 保留淡入淡出動畫但移除縮放效果
+                if showSavedIndicator {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("已保存")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .transition(.opacity) // 移除縮放效果，只保留淡入淡出
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation(AnimationConstants.standard) {
+                                showSavedIndicator = false
+                            }
+                        }
+                    }
+                }
+            }
+            
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(NSColor.textBackgroundColor))
+                    .shadow(color: Color.black.opacity(isFocused ? 0.1 : 0.05), radius: isFocused ? 5 : 3, x: 0, y: 1)
+                
+                EnhancedTextEditor(text: $thoughts)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minHeight: 250)
+                    .padding(5)
+            }
+            .onChange(of: thoughts) { oldValue, newValue in
+                diary.thoughts = newValue
+                saveContext()
+                
+                // 只顯示保存指示器，不添加縮放動畫
+                withAnimation(.easeIn(duration: 0.2)) {
+                    showSavedIndicator = true
+                }
+            }
+            .onHover { hovering in
+                withAnimation(AnimationConstants.quick) {
+                    isFocused = hovering
+                }
+            }
+            .help("在此輸入今日記事")
+        }
+        .padding(.top, 8)
+        .scaleEffect(appearScale)
+        .onAppear {
+            withAnimation(AnimationConstants.spring) {
+                appearScale = 1.0
+            }
+        }
+    }
+}
+
+// MARK: - 自定義文本編輯器
+/// 支持段落首字放大的文本編輯器，保持光標位置穩定
+struct EnhancedTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    @AppStorage("contentFontSize") private var contentFontSize: Double = 16
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: EnhancedTextEditor
+        var shouldUpdateText = true
+        var isComposing = false  // 追踪中文输入状态
+        
+        init(_ parent: EnhancedTextEditor) {
+            self.parent = parent
+        }
+        
+        func textDidChange(_ notification: Notification) {
+            guard shouldUpdateText, let textView = notification.object as? NSTextView else { return }
+            
+            // 只更新绑定的文本值，不应用样式
+            parent.text = textView.string
+        }
+        
+        // 监听输入法编辑会话开始
+        func textView(_ textView: NSTextView, didStartComposingAtPosition position: Int) {
+            isComposing = true
+        }
+        
+        // 监听输入法编辑会话结束
+        func textView(_ textView: NSTextView, didEndComposingAtPosition position: Int) {
+            isComposing = false
+            
+            // 中文输入完成后，应用样式
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.applyStyleAfterTyping(textView)
+            }
+        }
+        
+        // 输入完成后应用样式
+        func applyStyleAfterTyping(_ textView: NSTextView) {
+            if isComposing { return }
+            
+            // 保存当前选择范围
+            let selectedRanges = textView.selectedRanges
+            
+            shouldUpdateText = false
+            
+            // 应用段落首字样式
+            let text = textView.string
+            let attributedString = NSMutableAttributedString(string: text)
+            
+            // 设置基本样式
+            attributedString.addAttribute(.font, 
+                                          value: NSFont.systemFont(ofSize: CGFloat(parent.contentFontSize)),
+                                          range: NSRange(location: 0, length: text.count))
+            attributedString.addAttribute(.foregroundColor, 
+                                          value: NSColor.fromString(parent.contentFontColor),
+                                          range: NSRange(location: 0, length: text.count))
+            
+            // 应用段落首字样式
+            var paragraphStart = 0
+            text.enumerateSubstrings(in: text.startIndex..<text.endIndex, options: [.byParagraphs]) { (substring, substringRange, _, _) in
+                guard let paragraphText = substring, 
+                      !paragraphText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+                
+                // 找到段落开始位置
+                paragraphStart = text.distance(from: text.startIndex, to: substringRange.lowerBound)
+                
+                // 应用首字样式
+                if paragraphStart < text.count {
+                    let paragraphFirstCharLength = min(1, text.count - paragraphStart)
+                    attributedString.addAttribute(
+                        .font, 
+                        value: NSFont.boldSystemFont(ofSize: CGFloat(self.parent.contentFontSize) * 1.2),
+                        range: NSRange(location: paragraphStart, length: paragraphFirstCharLength)
+                    )
+                    attributedString.addAttribute(
+                        .foregroundColor, 
+                        value: NSColor.systemYellow,
+                        range: NSRange(location: paragraphStart, length: paragraphFirstCharLength)
+                    )
+                }
+            }
+            
+            // 应用样式
+            textView.textStorage?.setAttributedString(attributedString)
+            
+            // 恢复选择范围
+            textView.selectedRanges = selectedRanges
+            
+            shouldUpdateText = true
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    func makeNSView(context: Context) -> NSScrollView {
+        // 创建文本视图和滚动视图
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .noBorder
+        
+        let textView = NSTextView()
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(
+            width: scrollView.contentSize.width,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+        
+        // 基本配置
+        textView.allowsUndo = true
+        textView.isRichText = true
+        textView.isEditable = true
+        textView.isSelectable = true
+        textView.font = .systemFont(ofSize: CGFloat(contentFontSize))
+        textView.textColor = NSColor.fromString(contentFontColor)
+        
+        // 设置段落样式
+        let defaultParagraphStyle = NSMutableParagraphStyle()
+        defaultParagraphStyle.paragraphSpacing = 10 // 段落间距
+        textView.defaultParagraphStyle = defaultParagraphStyle
+        
+        // 设置代理
+        textView.delegate = context.coordinator
+        
+        // 设置初始文本
+        textView.string = text
+        
+        // 初始应用段落首字样式
+        if !text.isEmpty {
+            context.coordinator.applyStyleAfterTyping(textView)
+        }
+        
+        // 组装
+        scrollView.documentView = textView
+        
+        return scrollView
+    }
+    
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        
+        // 文本内容需要更新时（外部更新）
+        if textView.string != text && !context.coordinator.isComposing {
+            // 获取当前选择范围和滚动位置
+            let selectedRanges = textView.selectedRanges
+            let scrollPosition = scrollView.contentView.bounds.origin
+            
+            // 暂时禁用文本更新回调
+            context.coordinator.shouldUpdateText = false
+            
+            // 更新文本
+            textView.string = text
+            
+            // 应用段落首字样式
+            if !text.isEmpty {
+                context.coordinator.applyStyleAfterTyping(textView)
+            }
+            
+            // 恢复选择范围和滚动位置
+            textView.selectedRanges = selectedRanges
+            scrollView.contentView.scroll(to: scrollPosition)
+            
+            // 重新启用文本更新回调
+            context.coordinator.shouldUpdateText = true
+        }
+        
+        // 只在字体设置更改时更新
+        if textView.font?.pointSize != CGFloat(contentFontSize) || 
+           textView.textColor != NSColor.fromString(contentFontColor) {
+            textView.font = .systemFont(ofSize: CGFloat(contentFontSize))
+            textView.textColor = NSColor.fromString(contentFontColor)
+            
+            // 应用段落首字样式
+            if !textView.string.isEmpty && !context.coordinator.isComposing {
+                context.coordinator.applyStyleAfterTyping(textView)
+            }
+        }
+    }
+}
+
+
+
+
+// MARK: - 類別詳細視圖
+/// 顯示特定類別詳細內容的視圖
+struct CategoryDetailView: View {
+    @Environment(\.modelContext) private var modelContext
+    let type: DiaryEntryType
+    let diary: DiaryEntry
+    @State private var showingCategoryForm = false
+    @State private var editingEntry: CategoryEntry?
+    
+    /// 保存數據到持久化存儲
+    private func saveContext() {
+        do {
+            try modelContext.save()
+            print("\(type.rawValue)數據保存成功")
+        } catch {
+            print("保存失敗: \(error)")
+        }
+    }
+    
+    /// 獲取特定類型的條目列表
+    private func getEntries(for type: DiaryEntryType, in diary: DiaryEntry) -> [CategoryEntry] {
+        switch type {
+        case .expense: return diary.expenses
+        case .exercise: return diary.exercises
+        case .sleep: return diary.sleeps
+        case .work: return diary.works
+        case .relationship: return diary.relationships
+        case .study: return diary.studies
+        }
+    }
+    
+    var body: some View {
+        VStack {
+            CategoryTableView(
+                type: type,
+                entries: getEntries(for: type, in: diary),
+                diary: diary,
+                onAdd: {
+                    editingEntry = nil
+                    showingCategoryForm = true
+                },
+                onDelete: { indexSet in
+                    switch type {
+                    case .expense:
+                        diary.expenses.remove(atOffsets: indexSet)
+                    case .exercise:
+                        diary.exercises.remove(atOffsets: indexSet)
+                    case .sleep:
+                        diary.sleeps.remove(atOffsets: indexSet)
+                    case .work:
+                        diary.works.remove(atOffsets: indexSet)
+                    case .relationship:
+                        diary.relationships.remove(atOffsets: indexSet)
+                    case .study:
+                        diary.studies.remove(atOffsets: indexSet)
+                    }
+                    saveContext()
+                },
+                onEdit: { entry in
+                    editingEntry = entry
+                    showingCategoryForm = true
+                }
+            )
+        }
+        .sheet(isPresented: $showingCategoryForm) {
+            if let entry = editingEntry {
+                CategoryEntryForm(type: type, diary: diary, editingEntry: entry)
+            } else {
+                CategoryEntryForm(type: type, diary: diary)
+            }
+        }
+        .onChange(of: showingCategoryForm) { oldValue, newValue in
+            if !newValue {
+                // 當表單關閉時，清除編輯狀態
+                editingEntry = nil
+            }
+        }
+    }
+}
+
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: DiaryEntry.self, CategoryEntry.self, configurations: config)
+    return ContentView()
+        .modelContainer(container)
+}
+
+// MARK: - 偏好設置視圖
+struct PreferencesView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    // 字體設置
+    @AppStorage("titleFontSize") private var titleFontSize: Double = 22
+    @AppStorage("contentFontSize") private var contentFontSize: Double = 16
+    
+    // 顏色設置
+    @AppStorage("titleFontColor") private var titleFontColor: String = "Green"
+    @AppStorage("contentFontColor") private var contentFontColor: String = "White"
+    
+    // 目標設置
+    @AppStorage("monthlyExpenseLimit") private var monthlyExpenseLimit: Double = 20000
+    @AppStorage("dailyExerciseGoal") private var dailyExerciseGoal: Double = 60
+    @AppStorage("dailySleepGoal") private var dailySleepGoal: Double = 390
+    @AppStorage("dailyWorkGoal") private var dailyWorkGoal: Double = 120
+    @AppStorage("dailyRelationshipGoal") private var dailyRelationshipGoal: Double = 30
+    @AppStorage("dailyStudyGoal") private var dailyStudyGoal: Double = 60
+    
+    // 天氣設置
+    @AppStorage("weatherApiKey") private var weatherApiKey: String = "76fb9beb7dd213c17447b2b9080e0bcb"
+    
+    // 安全設置
+    @AppStorage("useBiometricAuth") private var useBiometricAuth: Bool = false
+    
+    // 可用的顏色選項
+    private let availableColors = ["Red", "Green", "Blue", "Orange", "Purple", "Yellow", "White", "Black"]
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 字體設置
+                    GroupBox(label: Text("字體設置").font(.headline)) {
+                        VStack(alignment: .leading, spacing: 15) {
+                            VStack(alignment: .leading) {
+                                Text("標題字體大小: \(Int(titleFontSize))")
+                                    .foregroundColor(Color.fromString(titleFontColor))
+                                    .font(.system(size: titleFontSize))
+                                
+                                Slider(value: $titleFontSize, in: 14...32, step: 1)
+                            }
+                            .padding(.bottom, 5)
+                            
+                            VStack(alignment: .leading) {
+                                Text("內容字體大小: \(Int(contentFontSize))")
+                                    .foregroundColor(Color.fromString(contentFontColor))
+                                    .font(.system(size: contentFontSize))
+                                
+                                Slider(value: $contentFontSize, in: 12...28, step: 1)
+                            }
+                            .padding(.bottom, 5)
+                            
+                            // 標題顏色
+                            HStack {
+                                Text("標題字體顏色")
+                                Spacer()
+                                Menu {
+                                    ForEach(availableColors, id: \.self) { color in
+                                        Button(color) {
+                                            titleFontColor = color
+                                        }
+                                    }
+                    } label: {
+                                    HStack {
+                                        Text(titleFontColor)
+                                            .foregroundColor(Color.fromString(titleFontColor))
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                            .padding(.bottom, 5)
+                            
+                            // 內容顏色
+                            HStack {
+                                Text("內容字體顏色")
+                                Spacer()
+                                Menu {
+                                    ForEach(availableColors, id: \.self) { color in
+                                        Button(color) {
+                                            contentFontColor = color
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(contentFontColor)
+                                            .foregroundColor(Color.fromString(contentFontColor))
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                    }
+                    .padding(.horizontal)
+                    
+                    // 目標設置
+                    GroupBox(label: Text("目標設置").font(.headline)) {
+                        VStack(spacing: 15) {
+                            HStack {
+                                Text("月支出上限")
+                                    .foregroundColor(.green)
+                                Spacer()
+                                TextField("", value: $monthlyExpenseLimit, formatter: NumberFormatter())
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 100)
+                            }
+                            
+                            HStack {
+                                Text("每日運動時間")
+                                    .foregroundColor(.green)
+                                Spacer()
+                                TextField("", value: $dailyExerciseGoal, formatter: NumberFormatter())
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 100)
+                            }
+                            
+                            HStack {
+                                Text("每日睡眠時間")
+                                    .foregroundColor(.green)
+                                Spacer()
+                                TextField("", value: $dailySleepGoal, formatter: NumberFormatter())
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 100)
+                            }
+                            
+                            HStack {
+                                Text("每日工作時間")
+                                    .foregroundColor(.green)
+                                Spacer()
+                                TextField("", value: $dailyWorkGoal, formatter: NumberFormatter())
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 100)
+                            }
+                            
+                            HStack {
+                                Text("每日關係經營")
+                                    .foregroundColor(.green)
+                                Spacer()
+                                TextField("", value: $dailyRelationshipGoal, formatter: NumberFormatter())
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 100)
+                            }
+                            
+                            HStack {
+                                Text("每日學習時間")
+                                    .foregroundColor(.green)
+                                Spacer()
+                                TextField("", value: $dailyStudyGoal, formatter: NumberFormatter())
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 100)
+                            }
+                        }
+                        .padding()
+                    }
+                    .padding(.horizontal)
+                    
+                    // 天氣設置
+                    GroupBox(label: Text("天氣設置").font(.headline)) {
+                        VStack(alignment: .leading) {
+                            Text("OpenWeatherMap API Key")
+                                .foregroundColor(.green)
+                            TextField("API Key", text: $weatherApiKey)
+                                .font(.system(size: 14))
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        .padding()
+                    }
+                    .padding(.horizontal)
+                    
+                    // 安全設置
+                    GroupBox(label: Text("安全設置").font(.headline)) {
+                        Toggle("使用指紋解鎖", isOn: $useBiometricAuth)
+                            .padding()
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.vertical)
+            }
+            .navigationTitle("偏好設置")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 颜色辅助函数
+extension Color {
+    static func fromString(_ colorName: String) -> Color {
+        switch colorName.lowercased() {
+        case "red": return .red
+        case "green": return .green
+        case "blue": return .blue
+        case "orange": return .orange
+        case "purple": return .purple
+        case "yellow": return .yellow
+        case "white": return .white
+        case "black": return .black
+        case "gray": return .gray
+        default: return .primary
+        }
+    }
+}
+
+extension NSColor {
+    static func fromString(_ colorName: String) -> NSColor {
+        switch colorName.lowercased() {
+        case "red": return .systemRed
+        case "green": return .systemGreen
+        case "blue": return .systemBlue
+        case "orange": return .systemOrange
+        case "purple": return .systemPurple
+        case "yellow": return .systemYellow
+        case "white": return .white
+        case "black": return .black
+        default: return .labelColor
+        }
+    }
+}
+
+// MARK: - 使用說明視圖
+struct HelpView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack {
+            // 標題和關閉按鈕
+            HStack {
+                Text("使用說明")
+                    .font(.system(size: 28))
+                    .fontWeight(.bold)
+                Spacer()
+                Button("完成") {
+                    dismiss()
+                }
+                .font(.system(size: 20))
+            }
+            .padding()
+            
+            // 內容
+            ScrollView {
+                VStack(alignment: .leading, spacing: 25) {
+                    Group {
+                        helpSection(title: "基本操作",
+                                  items: ["點擊右上角「+」按鈕新增日記",
+                                         "左滑日記項目可以刪除",
+                                         "點擊日記項目可以查看詳細內容",
+                                         "在日曆中選擇日期可以查看該日的日記"])
+                        
+                        helpSection(title: "天氣記錄",
+                                  items: ["新增日記時可以手動選擇天氣",
+                                         "點擊「獲取天氣」可以自動獲取當前位置的天氣",
+                                         "天氣資訊包含溫度範圍和天氣描述"])
+                        
+                        helpSection(title: "天氣 API 設置",
+                                  items: ["本程式使用 OpenWeatherMap 提供的免費天氣 API",
+                                         "1. 前往 OpenWeatherMap 網站註冊帳號：https://openweathermap.org/",
+                                         "2. 註冊完成後，登入並進入 API Keys 頁面：https://home.openweathermap.org/api_keys",
+                                         "3. 點擊「Generate」按鈕創建新的 API Key",
+                                         "4. 複製生成的 API Key",
+                                         "5. 在本程式的「偏好設置」中，將 API Key 貼上到「天氣設置」欄位",
+                                         "6. API Key 生效可能需要等待幾小時",
+                                         "注意：免費版每分鐘可呼叫 60 次，對於一般使用已經足夠"])
+                        
+                        helpSection(title: "分類記錄",
+                                  items: ["支援六種分類記錄：支出、運動、睡眠、工作、關係、學習",
+                                         "每個分類都可以添加多個記錄",
+                                         "分類記錄包含名稱、類別、數量和備註",
+                                         "部分分類提供預設的類別選項"])
+                        
+                        helpSection(title: "搜尋功能",
+                                  items: ["使用Command+F或點擊搜尋按鈕開啟搜尋",
+                                         "可以搜尋日期、天氣、記事和所有分類記錄",
+                                         "使用上下箭頭或按鈕在搜尋結果中導航"])
+                        
+                        helpSection(title: "數據管理",
+                                  items: ["支援匯出日記數據為JSON格式",
+                                         "可以匯入之前匯出的數據",
+                                         "可以選擇日期範圍進行匯出"])
+                        
+                        helpSection(title: "個人化設定",
+                                  items: ["可以調整標題和內容的字體大小",
+                                         "可以更改標題和內容的顏色",
+                                         "支援Face ID/Touch ID解鎖功能",
+                                         "可以設置開發者模式跳過認證"])
+                    }
+                }
+                .padding()
+            }
+        }
+    }
+    
+    private func helpSection(title: String, items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text(title)
+                .font(.system(size: 24))
+                .fontWeight(.bold)
+            
+            ForEach(items, id: \.self) { item in
+                if item.hasPrefix("http") {
+                    Link(item, destination: URL(string: item)!)
+                        .font(.system(size: 21))
+                        .foregroundColor(.blue)
+                        .padding(.leading, 25)
+                } else {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text("•")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 21))
+                        Text(item)
+                            .font(.system(size: 21))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 添加自定義游標修飾符
+struct CursorModifier: ViewModifier {
+    let cursor: NSCursor
+    
+    func body(content: Content) -> some View {
+        content.onHover { inside in
+            if inside {
+                cursor.push()
+            } else {
+                NSCursor.pop()
+            }
+        }
+    }
+}
+
+extension View {
+    func customCursor(_ cursor: NSCursor) -> some View {
+        modifier(CursorModifier(cursor: cursor))
+    }
+}
+
+// MARK: - 帶自動完成功能的名稱輸入區塊
+private struct NameSectionWithAutocomplete: View {
+    let type: DiaryEntryType
+    @Binding var name: String
+    let suggestions: [String]
+    @Binding var showingSuggestions: Bool
+    @Binding var selectedSuggestionIndex: Int
+    let onNameChanged: () -> Void
+    let onSuggestionSelected: (String) -> Void
+    let onTabPressed: () -> Void
+    @FocusState private var isNameFocused: Bool
+    
+    var nameLabel: String {
+        switch type {
+        case .expense: return "名稱"
+        case .exercise: return "名稱"
+        case .sleep: return "品質"
+        case .work: return "名稱"
+        case .relationship: return "姓名"
+        case .study: return "名稱"
+        }
+    }
+    
+    var body: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Image(systemName: type.icon)
+                        .foregroundColor(.blue)
+                        .font(.system(size: 20))
+                    Text(nameLabel)
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 20))
+                    Spacer()
+                    
+                    TextField("", text: $name)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 20))
+                        .multilineTextAlignment(.trailing)
+                        .onChange(of: name) { oldValue, newValue in
+                            onNameChanged()
+                        }
+                        .focused($isNameFocused)
+                        .onSubmit {
+                            showingSuggestions = false
+                        }
+                        .onKeyPress(.tab) {
+                            onTabPressed()
+                            return .handled
+                        }
+                        .help("輸入\(nameLabel)，按Tab可自動填寫")
+                }
+                
+                if showingSuggestions && isNameFocused {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(suggestions.enumerated()), id: \.element) { index, suggestion in
+                                Text(suggestion)
+                                    .font(.system(size: 18))
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 8)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(index == selectedSuggestionIndex ? Color.blue.opacity(0.2) : Color.clear)
+                                    .cornerRadius(4)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        onSuggestionSelected(suggestion)
+                                    }
+                                    .onHover { isHovered in
+                                        if isHovered {
+                                            selectedSuggestionIndex = index
+                                        }
+                                    }
+                                    .customCursor(.pointingHand)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 150)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .padding(.top, 4)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 動畫常數
+struct AnimationConstants {
+    static let standard = Animation.easeInOut(duration: 0.3)
+    static let quick = Animation.easeOut(duration: 0.2)
+    static let slow = Animation.easeInOut(duration: 0.5)
+    static let spring = Animation.spring(response: 0.3, dampingFraction: 0.6)
+    static let springSmall = Animation.spring(response: 0.2, dampingFraction: 0.75)
+}
+
+// MARK: - 自定義動畫按鈕樣式
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .animation(.spring(response: 0.2), value: configuration.isPressed)
+    }
+}
+
+// MARK: - 自定义日期选择器
+struct CustomDatePickerView: View {
+    @Binding var selectedDate: Date
+    let timeInterval: Calendar.Component = .day // 固定为按天增减
+    @State private var showingCalendar: Bool = false
+    var titleFontColor: String = "Green" // 默认值
+    var contentFontColor: String = "White" // 默认值
+    @Environment(\.modelContext) private var modelContext
+    var selectedDiary: Binding<DiaryEntry?>?
+    
+    // 添加初始化方法，允许不传入selectedDiary
+    init(selectedDate: Binding<Date>, titleFontColor: String, contentFontColor: String) {
+        self._selectedDate = selectedDate
+        self.titleFontColor = titleFontColor
+        self.contentFontColor = contentFontColor
+        self.selectedDiary = nil
+    }
+    
+    // 完整初始化方法
+    init(selectedDate: Binding<Date>, titleFontColor: String, contentFontColor: String, selectedDiary: Binding<DiaryEntry?>) {
+        self._selectedDate = selectedDate
+        self.titleFontColor = titleFontColor
+        self.contentFontColor = contentFontColor
+        self.selectedDiary = selectedDiary
+    }
+    
+    var body: some View {
+        HStack(spacing: 5) {
+            HStack(spacing: 0) {
+                Text(dateFormatter.string(from: selectedDate))
+                    .frame(minWidth: 120)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .font(.system(size: 20))
+                    .foregroundColor(Color.fromString(contentFontColor)) // 使用用户首选的内容字体颜色
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color(NSColor.controlBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                
+                VStack(spacing: 0) {
+                    Button(action: incrementDate) {
+                        Image(systemName: "chevron.up")
+                            .frame(width: 20, height: 12)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                    .padding(.vertical, 2)
+                    .customCursor(.pointingHand)
+                    .help("增加一天")
+                    
+                    Divider()
+                        .frame(height: 1)
+                    
+                    Button(action: decrementDate) {
+                        Image(systemName: "chevron.down")
+                            .frame(width: 20, height: 12)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                    .padding(.vertical, 2)
+                    .customCursor(.pointingHand)
+                    .help("減少一天")
+                }
+                .frame(width: 20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .fixedSize()
+            
+            // 添加日历按钮
+            Button(action: {
+                showingCalendar = true
+            }) {
+                Image(systemName: "calendar")
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(Color.fromString(titleFontColor)) // 使用标题字体颜色
+                    .padding(2)
+            }
+            .buttonStyle(.borderless)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(NSColor.controlBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .customCursor(.pointingHand)
+            .help("開啟日曆")
+            .popover(isPresented: $showingCalendar, arrowEdge: .bottom) {
+                VStack {
+                    DatePicker("", selection: $selectedDate, displayedComponents: [.date])
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+                        .padding()
+                        .frame(minWidth: 300)
+                        .onChange(of: selectedDate) { _, _ in
+                            updateSelectedDiary()
+                        }
+                    
+                    Button("確定") {
+                        showingCalendar = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.bottom)
+                }
+                .padding(5)
+            }
+        }
+    }
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/M/d"
+        return formatter
+    }
+    
+    private func incrementDate() {
+        withAnimation {
+            selectedDate = Calendar.current.date(byAdding: timeInterval, value: 1, to: selectedDate) ?? selectedDate
+            updateSelectedDiary()
+        }
+    }
+
+    private func decrementDate() {
+        withAnimation {
+            selectedDate = Calendar.current.date(byAdding: timeInterval, value: -1, to: selectedDate) ?? selectedDate
+            updateSelectedDiary()
+        }
+    }
+    
+    private func updateSelectedDiary() {
+        // 检查是否需要更新selectedDiary
+        guard let selectedDiaryBinding = selectedDiary else { return }
+        
+        // 獲取所選日期的起始和結束時間點
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        logInfo("CustomDatePicker: 更新日記，日期 \(selectedDate.formatted())")
+        
+        // 清除當前選擇的日記，避免資料殘留
+        selectedDiaryBinding.wrappedValue = nil
+        
+        // 查詢所有日記
+        do {
+            // 獲取所有日記
+            let allDiaries = try modelContext.fetch(FetchDescriptor<DiaryEntry>())
+            
+            // 過濾當天的日記
+            let diariesForSelectedDate = allDiaries.filter { diary in
+                let diaryDate = diary.date
+                return diaryDate >= startOfDay && diaryDate < endOfDay
+            }
+            
+            if let newDiary = diariesForSelectedDate.first {
+                logInfo("CustomDatePicker: 找到日期 \(selectedDate.formatted()) 的日記，ID: \(newDiary.id)")
+                selectedDiaryBinding.wrappedValue = newDiary
+                logInfo("CustomDatePicker: 已設置日記，ID: \(newDiary.id), 記事長度: \(newDiary.thoughts.count) 字符")
+            } else {
+                logInfo("CustomDatePicker: 未找到日期 \(selectedDate.formatted()) 的日記")
+                selectedDiaryBinding.wrappedValue = nil
+            }
+        } catch {
+            logInfo("CustomDatePicker: 查詢日記失敗: \(error)")
+            selectedDiaryBinding.wrappedValue = nil
+        }
+    }
+}
+
+// MARK: - 視圖擴展
+extension View {
+    // 暂时不需要safeToolbar方法，直接使用原生toolbar即可
+}
+
+// MARK: - Modifiers
+struct ListToolbarModifier: ViewModifier {
+    let toggleSearchField: () -> Void
+    let showSearchField: Bool
+    let switchToToday: () -> Void
+    @Binding var isExporting: Bool
+    @Binding var showingDateRangeSheet: Bool
+    @Binding var showingPreferencesSheet: Bool
+    @Binding var showingHelpSheet: Bool
+    @Binding var showingNewDiarySheet: Bool
+    @Binding var showingBackupSelectionSheet: Bool
+    
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button(action: toggleSearchField) {
+                    Image(systemName: showSearchField ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
+                        .font(.title2)
+                }
+                .customCursor(.pointingHand)
+                .help("搜尋日記")
+            }
+            
+            ToolbarItem(placement: .automatic) {
+                Button(action: switchToToday) {
+                    Image(systemName: "calendar.circle")
+                        .font(.title2)
+                }
+                .customCursor(.pointingHand)
+                .help("切換到今日")
+            }
+            
+            ToolbarItem(placement: .automatic) {
+                Button(action: { 
+                    isExporting = true
+                    showingDateRangeSheet = true 
+                }) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title2)
+                }
+                .customCursor(.pointingHand)
+                .help("匯出備份")
+            }
+            
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { showingPreferencesSheet = true }) {
+                    Image(systemName: "gear")
+                        .font(.title2)
+                }
+                .customCursor(.pointingHand)
+                .help("偏好設置")
+            }
+            
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { showingHelpSheet = true }) {
+                    Image(systemName: "questionmark.circle")
+                        .font(.title2)
+                }
+                .customCursor(.pointingHand)
+                .help("使用說明")
+            }
+            
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { 
+                    isExporting = false
+                    showingBackupSelectionSheet = true 
+                }) {
+                    Image(systemName: "arrow.down.doc")
+                        .font(.title2)
+                }
+                .customCursor(.pointingHand)
+                .help("从备份恢复日记")
+            }
+        }
+    }
+}
+
+// DiaryEntryType 转换器
+class DiaryEntryTypeTransformer: ValueTransformer {
+    static let shared = DiaryEntryTypeTransformer()
+    
+    override class func transformedValueClass() -> AnyClass {
+        return NSString.self
+    }
+    
+    override class func allowsReverseTransformation() -> Bool {
+        return true
+    }
+    
+    override func transformedValue(_ value: Any?) -> Any? {
+        return "Deprecated"
+    }
+    
+    override func reverseTransformedValue(_ value: Any?) -> Any? {
+        return nil
+    }
+}
+
+// 注册 DiaryEntryType 转换器
+extension DiaryEntryTypeTransformer {
+    static func register() {
+    }
+}
+
+// 添加静态方法以便在BackupSelectionView中使用
+extension ContentView {
+    static func findLocalBackupsStatic() -> [URL] {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileManager = FileManager.default
+        
+        print("開始搜索備份文件")
+        print("文檔目錄路徑: \(documentsDirectory.path)")
+        
+        do {
+            // 確認目錄存在
+            var isDirectory: ObjCBool = false
+            if !fileManager.fileExists(atPath: documentsDirectory.path, isDirectory: &isDirectory) || !isDirectory.boolValue {
+                print("錯誤: 文檔目錄不存在或不是目錄")
+                return []
+            }
+            
+            // 列出目錄中的所有文件
+            let allFiles = try fileManager.contentsOfDirectory(atPath: documentsDirectory.path)
+            print("文檔目錄中的所有文件: \(allFiles)")
+            
+            // 獲取文檔目錄中的所有文件，包括修改日期屬性
+            let fileURLs = try fileManager.contentsOfDirectory(
+                at: documentsDirectory,
+                includingPropertiesForKeys: [.contentModificationDateKey]
+            )
+            
+            print("找到總共 \(fileURLs.count) 個文件")
+            
+            // 過濾出備份文件（.json格式且文件名包含"diary_backup_"）
+            let backupFiles = fileURLs.filter { url in
+                let filename = url.lastPathComponent
+                let isBackup = filename.hasSuffix(".json") && filename.contains("diary_backup_")
+                if isBackup {
+                    print("找到備份文件: \(filename)")
+                }
+                return isBackup
+            }
+            
+            print("過濾後找到 \(backupFiles.count) 個備份文件")
+            
+            // 按修改時間排序（最新的在前面）
+            let sortedFiles = try backupFiles.sorted { url1, url2 in
+                let attrs1 = try url1.resourceValues(forKeys: [.contentModificationDateKey])
+                let attrs2 = try url2.resourceValues(forKeys: [.contentModificationDateKey])
+                
+                guard let date1 = attrs1.contentModificationDate,
+                      let date2 = attrs2.contentModificationDate else {
+                    return false
+                }
+                
+                return date1 > date2
+            }
+            
+            print("排序後的備份文件:")
+            for file in sortedFiles {
+                print("- \(file.lastPathComponent)")
+            }
+            
+            return sortedFiles
+        } catch {
+            print("查找備份文件時出錯: \(error)")
+            return []
+        }
+    }
+}
+
+// MARK: - BackupSelectionView
+struct BackupSelectionView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var backupFiles: [URL] = []
+    @State private var alertMessage = ""
+    @State private var showingAlert = false
+    @State private var isImporting = false
+    
+    // 引用内容视图中的恢复函数
+    var restoreSelectedEntries: (URL, [UUID]) -> Void
+    
+    init(restoreSelectedEntries: @escaping (URL, [UUID]) -> Void) {
+        self.restoreSelectedEntries = restoreSelectedEntries
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                Text("選擇備份文件")
+                    .font(.title)
+                    .padding()
+                
+                // 顯示本地備份文件列表，即使為空也顯示列表
+                VStack {
+                    if backupFiles.isEmpty {
+                        Text("未在文檔目錄找到備份文件")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding()
+                    } else {
+                        Text("找到 \(backupFiles.count) 個本地備份文件:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    List {
+                        if backupFiles.isEmpty {
+                            // 顯示空列表項
+                            Text("無可用的本地備份")
+                                .foregroundColor(.secondary)
+                                .italic()
+                        } else {
+                            // 顯示找到的備份文件
+                            ForEach(backupFiles, id: \.self) { fileURL in
+                                Button(action: {
+                                    print("嘗試恢復文件: \(fileURL.path)")
+                                    // 簡化版本：直接恢復整個文件，不選擇單個條目
+                                    restoreSelectedEntries(fileURL, [])
+                                    dismiss()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "doc.text")
+                                            .foregroundColor(.blue)
+                                        
+                                        VStack(alignment: .leading) {
+                                            Text(fileURL.lastPathComponent)
+                                                .lineLimit(1)
+                                                .font(.headline)
+                                            
+                                            if let fileAttributes = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
+                                               let modificationDate = fileAttributes[.modificationDate] as? Date,
+                                               let fileSize = fileAttributes[.size] as? UInt64 {
+                                                Text("修改時間: \(formattedDate(modificationDate)) - \(formatFileSize(fileSize))")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                            }
+                        }
+                    }
+                    .frame(minHeight: 200)
+                    
+                    // 從其他位置匯入的按鈕
+                    Button(action: {
+                        isImporting = true
+                    }) {
+                        Label("從其他位置匯入備份", systemImage: "square.and.arrow.down")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .padding()
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                }
+            }
+            .alert(isPresented: $showingAlert) {
+                Alert(
+                    title: Text("提示"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("確定"))
+                )
+            }
+            .fileImporter(
+                isPresented: $isImporting,
+                allowedContentTypes: [.json],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    guard let selectedURL = urls.first else { return }
+                    
+                    print("選擇的文件: \(selectedURL.path)")
+                    
+                    // 檢查文件是否可以訪問
+                    if selectedURL.startAccessingSecurityScopedResource() {
+                        defer { selectedURL.stopAccessingSecurityScopedResource() }
+                        
+                        // 使用靜態方法驗證備份文件
+                        if ContentView.selectBackupFile(url: selectedURL) {
+                            // 恢復選定的備份
+                            restoreSelectedEntries(selectedURL, [])
+                            dismiss()
+                        } else {
+                            alertMessage = "所選文件不是有效的日記備份文件"
+                            showingAlert = true
+                        }
+                    } else {
+                        alertMessage = "無法訪問選定的文件"
+                        showingAlert = true
+                    }
+                    
+                case .failure(let error):
+                    print("文件選擇錯誤: \(error)")
+                    alertMessage = "選擇文件失敗: \(error.localizedDescription)"
+                    showingAlert = true
+                }
+            }
+            .onAppear {
+                // 載入本地備份文件
+                print("BackupSelectionView出現，開始加載備份文件")
+                DispatchQueue.main.async {
+                    backupFiles = ContentView.findLocalBackupsStatic()
+                    print("加載完成，顯示 \(backupFiles.count) 個備份文件")
+                    
+                    // 如果沒有找到備份文件，但我們認為應該有備份，檢查文檔目錄
+                    if backupFiles.isEmpty {
+                        let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                        print("備份文件為空，再次確認文檔目錄: \(docsURL.path)")
+                        
+                        do {
+                            let contents = try FileManager.default.contentsOfDirectory(atPath: docsURL.path)
+                            print("文檔目錄內容: \(contents)")
+                        } catch {
+                            print("讀取文檔目錄失敗: \(error)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 格式化日期
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    // 格式化文件大小
+    private func formatFileSize(_ size: UInt64) -> String {
+        let byteCountFormatter = ByteCountFormatter()
+        byteCountFormatter.allowedUnits = [.useKB, .useMB]
+        byteCountFormatter.countStyle = .file
+        return byteCountFormatter.string(fromByteCount: Int64(size))
+    }
+}
+
+// MARK: - 實用工具函數
+/// 日誌記錄函數，方便追蹤和診斷問題
+func logInfo(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
+    let filename = URL(fileURLWithPath: file).lastPathComponent
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "HH:mm:ss.SSS"
+    let timestamp = dateFormatter.string(from: Date())
+    print("[\(timestamp)] [\(filename):\(line)] \(function): \(message)")
+}
+
+// 為檔案匯出功能添加 Document 類型
+struct JSONDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    
+    var data: Data
+    
+    init(data: Data) {
+        self.data = data
+    }
+    
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        self.data = data
+    }
+    
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        return FileWrapper(regularFileWithContents: data)
+    }
+}
+
+extension ContentView {
+    // ... existing code ...
+    
+    static func selectBackupFile(url: URL) -> Bool {
+        print("開始驗證備份文件: \(url.path)")
+        
+        // 檢查文件是否存在
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            print("文件不存在: \(url.path)")
+            return false
+        }
+        
+        // 檢查文件是否可讀
+        guard FileManager.default.isReadableFile(atPath: url.path) else {
+            print("文件不可讀: \(url.path)")
+            return false
+        }
+        
+        // 檢查文件大小
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            if let fileSize = attributes[.size] as? UInt64 {
+                print("備份文件大小: \(fileSize) 字節")
+                if fileSize == 0 {
+                    print("錯誤: 備份文件為空")
+                    return false
+                }
+            }
+        } catch {
+            print("無法獲取文件屬性: \(error)")
+        }
+        
+        do {
+            // 讀取文件數據
+            let data = try Data(contentsOf: url)
+            print("成功讀取文件數據，大小: \(data.count) 字節")
+            
+            // 預覽JSON內容
+            if let preview = String(data: data.prefix(200), encoding: .utf8) {
+                print("JSON預覽: \(preview)...")
+            }
+            
+            // 嘗試解碼備份數據以確保格式正確
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            // 嘗試解碼
+            do {
+                // 只檢查文件格式，不需要完全解碼
+                let backup = try decoder.decode(DiaryBackup.self, from: data)
+                print("成功驗證備份文件，包含 \(backup.entries.count) 條日記")
+                return true
+            } catch {
+                print("JSON解碼失敗: \(error)")
+                
+                // 嘗試診斷具體問題
+                if let decodingError = error as? DecodingError {
+                    switch decodingError {
+                    case .dataCorrupted(let context):
+                        print("數據損壞: \(context.debugDescription)")
+                    case .keyNotFound(let key, let context):
+                        print("找不到鍵 '\(key.stringValue)': \(context.debugDescription)")
+                    case .typeMismatch(let type, let context):
+                        print("類型不匹配 \(type): \(context.debugDescription)")
+                    case .valueNotFound(let type, let context):
+                        print("找不到值 \(type): \(context.debugDescription)")
+                    @unknown default:
+                        print("未知解碼錯誤")
+                    }
+                }
+                
+                return false
+            }
+        } catch {
+            print("無法讀取備份文件: \(error)")
+            return false
+        }
+    }
+}
+
+// 提醒表單視圖
+
+// 日曆事件幫助類
+class CustomCalendarEventHelper {
+    // 從文本中提取事件詳情
+    static func extractEventDetails(from text: String) -> (title: String, date: Date)? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "zh_TW")
+        dateFormatter.dateFormat = "yyyy/MM/dd HH:mm"
+        
+        // 匹配 "事件名稱 yyyy/MM/dd HH:mm" 格式的文本
+        let pattern = "([^\\s]+)\\s+(\\d{4}/\\d{1,2}/\\d{1,2}\\s+\\d{1,2}:\\d{1,2})"
+        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        
+        if let regex = regex,
+           let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.count)) {
+            // 提取事件名稱和日期時間字符串
+            if let titleRange = Range(match.range(at: 1), in: text),
+               let dateRange = Range(match.range(at: 2), in: text) {
+                let title = String(text[titleRange])
+                let dateString = String(text[dateRange])
+                
+                // 解析日期
+                if let date = dateFormatter.date(from: dateString) {
+                    return (title: title, date: date)
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    // 創建日曆事件並返回要添加到記事中的文本
+    static func createCalendarEvent(title: String, date: Date, completion: @escaping (String) -> Void) {
+        let eventStore = EKEventStore()
+        
+        eventStore.requestAccess(to: .event) { granted, error in
+            DispatchQueue.main.async {
+                var reminderNote = ""
+                
+                if granted {
+                    let event = EKEvent(eventStore: eventStore)
+                    event.title = title
+                    event.startDate = date
+                    event.endDate = date.addingTimeInterval(3600) // 預設一小時
+                    event.calendar = eventStore.defaultCalendarForNewEvents
+                    
+                    do {
+                        try eventStore.save(event, span: .thisEvent)
+                        
+                        // 格式化日期
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.locale = Locale(identifier: "zh_TW")
+                        dateFormatter.dateFormat = "yyyy/MM/dd HH:mm"
+                        
+                        // 在記事末尾添加提醒標記
+                        reminderNote = "\n📌提醒事項：\(dateFormatter.string(from: date)) \(title)"
+                    } catch {
+                        print("創建日曆事件失敗：\(error.localizedDescription)")
+                    }
+                }
+                
+                completion(reminderNote)
+            }
+        }
+    }
+}
+

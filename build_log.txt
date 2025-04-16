@@ -1,0 +1,574 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project newDiary.xcodeproj -scheme newDiary clean build
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008112-001265290C3BC01E, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008112-001265290C3BC01E, name:My Mac }
+{ platform:macOS, name:Any Mac }
+ComputePackagePrebuildTargetDependencyGraph
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+** CLEAN SUCCEEDED **
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008112-001265290C3BC01E, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008112-001265290C3BC01E, name:My Mac }
+{ platform:macOS, name:Any Mac }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'newDiary' in project 'newDiary' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: dd64b0d6f263ed35c120a4d4df66b436
+Build description path: /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/XCBuildData/dd64b0d6f263ed35c120a4d4df66b436.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk /Users/wangpuma/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx15.4-24E241-88b860576fb364319593bd8fb30666b0.sdkstatcache
+    cd /Users/wangpuma/Downloads/work/new/newDiary/newDiary.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx15.4-24E241-88b860576fb364319593bd8fb30666b0.sdkstatcache
+
+CreateBuildDirectory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products
+    cd /Users/wangpuma/Downloads/work/new/newDiary/newDiary.xcodeproj
+    builtin-create-build-directory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products
+
+CreateBuildDirectory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex
+    cd /Users/wangpuma/Downloads/work/new/newDiary/newDiary.xcodeproj
+    builtin-create-build-directory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex
+
+CreateBuildDirectory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug
+    cd /Users/wangpuma/Downloads/work/new/newDiary/newDiary.xcodeproj
+    builtin-create-build-directory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug
+
+CreateBuildDirectory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/EagerLinkingTBDs/Debug
+    cd /Users/wangpuma/Downloads/work/new/newDiary/newDiary.xcodeproj
+    builtin-create-build-directory /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/EagerLinkingTBDs/Debug
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary-b41327a2a9e221bc9d803088508dbb40-VFS/all-product-headers.yaml
+    cd /Users/wangpuma/Downloads/work/new/newDiary/newDiary.xcodeproj
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary-b41327a2a9e221bc9d803088508dbb40-VFS/all-product-headers.yaml
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-project-headers.hmap (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-project-headers.hmap
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.hmap (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.hmap
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-generated-files.hmap (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-generated-files.hmap
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-own-target-headers.hmap (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-non-framework-target-headers.hmap (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-target-headers.hmap (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.DependencyStaticMetadataFileList (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.DependencyMetadataFileList (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-DebugDylibPath-normal-arm64.txt (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-DebugDylibInstallName-normal-arm64.txt (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/empty-日記.plist (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/empty-日記.plist
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftFileList (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftFileList
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftConstValuesFileList (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.LinkFileList (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.LinkFileList
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary_const_extract_protocols.json (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary-OutputFileMap.json (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/Entitlements.plist (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    write-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/Entitlements.plist
+
+ValidateDevelopmentAssets /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-validate-development-assets --validate YES_ERROR /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Preview\ Content
+
+MkDir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /bin/mkdir -p /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS
+
+MkDir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /bin/mkdir -p /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+MkDir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /bin/mkdir -p /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents
+
+MkDir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /bin/mkdir -p /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app
+
+ProcessProductPackaging /Users/wangpuma/Downloads/work/new/newDiary/newDiary/newDiary.entitlements /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+    Entitlements:
+    
+    {
+    "com.apple.security.app-sandbox" = 1;
+    "com.apple.security.device.camera" = 1;
+    "com.apple.security.files.user-selected.read-only" = 1;
+    "com.apple.security.get-task-allow" = 1;
+    "com.apple.security.network.client" = 1;
+    "com.apple.security.personal-information.location" = 1;
+    "com.apple.security.personal-information.photos-library" = 1;
+}
+    
+    builtin-productPackagingUtility /Users/wangpuma/Downloads/work/new/newDiary/newDiary/newDiary.entitlements -entitlements -format xml -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent
+
+ProcessProductPackagingDER /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent.der (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /usr/bin/derq query -f xml -i /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent.der --raw
+
+MkDir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/unthinned (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /bin/mkdir -p /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/unthinned
+
+MkDir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/thinned (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /bin/mkdir -p /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/thinned
+
+Ld /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/__preview.dylib normal (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -O0 -L/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -F/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -install_name @rpath/日記.debug.dylib -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記_dependency_info.dat -Xlinker -no_adhoc_codesign -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/__preview.dylib
+
+CpResource /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/newDiaryApp.swift.new /Users/wangpuma/Downloads/work/new/newDiary/newDiary/newDiaryApp.swift.new (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/wangpuma/Downloads/work/new/newDiary/newDiary/newDiaryApp.swift.new /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+CpResource /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/README.md /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Resources/README.md (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Resources/README.md /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+CpResource /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/DiaryEntry.swift.bak /Users/wangpuma/Downloads/work/new/newDiary/newDiary/DiaryEntry.swift.bak (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/wangpuma/Downloads/work/new/newDiary/newDiary/DiaryEntry.swift.bak /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+CpResource /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/ContentView.swift.tmp /Users/wangpuma/Downloads/work/new/newDiary/newDiary/ContentView.swift.tmp (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/wangpuma/Downloads/work/new/newDiary/newDiary/ContentView.swift.tmp /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+GenerateAssetSymbols /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Assets.xcassets /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Preview\ Content/Preview\ Assets.xcassets (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Assets.xcassets /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Preview\ Content/Preview\ Assets.xcassets --compile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources --output-format human-readable-text --notices --warnings --export-dependency-info /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_dependencies --output-partial-info-plist /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --enable-on-demand-resources NO --development-region en --target-device mac --minimum-deployment-target 14.0 --platform macosx --bundle-identifier com.wangpuma.newDiary.3 --generate-swift-asset-symbols /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CpResource /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/ContentView.swift.bak /Users/wangpuma/Downloads/work/new/newDiary/newDiary/ContentView.swift.bak (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/wangpuma/Downloads/work/new/newDiary/newDiary/ContentView.swift.bak /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+CpResource /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/CategoryTableView.swift.bak /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CategoryTableView.swift.bak (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CategoryTableView.swift.bak /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources
+
+CopyPlistFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/Info.plist /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Info.plist (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copyPlist --outdir /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources -- /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Info.plist
+
+CompileAssetCatalogVariant thinned /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Assets.xcassets /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Preview\ Content/Preview\ Assets.xcassets (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Assets.xcassets /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Preview\ Content/Preview\ Assets.xcassets --compile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --enable-on-demand-resources NO --development-region en --target-device mac --minimum-deployment-target 14.0 --platform macosx
+2025-04-05 20:50:02.286 ibtoold[7609:12511818] NSFileCoordinator is doing nothing.
+/* com.apple.actool.compilation-results */
+/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist_thinned
+/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/thinned/AppIcon.icns
+/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver newDiary normal arm64 com.apple.xcode.tools.swift.compiler (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name 日記 -Onone -enforce-exclusivity\=checked @/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -target arm64-apple-macos14.0 -g -module-cache-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Index.noindex/DataStore -swift-version 5 -I /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -F /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx15.4-24E241-88b860576fb364319593bd8fb30666b0.sdkstatcache -output-file-map /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary_const_extract_protocols.json -Xcc -iquote -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-generated-files.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-own-target-headers.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-target-headers.hmap -Xcc -iquote -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-project-headers.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/include -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources-normal/arm64 -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/arm64 -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記-Swift.h -working-directory /Users/wangpuma/Downloads/work/new/newDiary -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ RecordView.swift,\ WeatherService.swift,\ BackupSelectionView.swift,\ ContentView.swift,\ DiaryDetailView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/RecordView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Services/WeatherService.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/ContentView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/DiaryDetailView.swift (in target 'newDiary' from project 'newDiary')
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/RecordView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Services/WeatherService.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift:140:13: warning: result of call to 'handleDrop(providers:)' is unused
+            handleDrop(providers: providers)
+            ^         ~~~~~~~~~~~~~~~~~~~~~~
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift:221:19: warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead
+        openPanel.allowedFileTypes = ["json"]  // 使用字符串定義檔案類型而不是 UTType
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift:308:17: warning: variable 'allEntriesDescriptor' was never mutated; consider changing to 'let' constant
+            var allEntriesDescriptor = FetchDescriptor<DiaryEntry>()
+            ~~~ ^
+            let
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift:457:23: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+                    } catch {
+                      ^
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift:482:37: warning: will never be executed
+                (failureCount > 0 ? "，\(failureCount) 篇恢復失敗" : "") + 
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/BackupSelectionView.swift:482:31: note: condition always evaluates to false
+                (failureCount > 0 ? "，\(failureCount) 篇恢復失敗" : "") + 
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/ContentView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/DiaryDetailView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/DiaryDetailView.swift:777:32: warning: immutable value 'bulletIndex' was never used; consider replacing with '_' or removing it
+                           let bulletIndex = lineString.firstIndex(of: "◎") {
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/DiaryDetailView.swift:1535:7: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+    } catch {
+      ^
+
+SwiftCompile normal arm64 Compiling\ CategoryEntry.swift,\ Color+Extensions.swift,\ Item.swift,\ DiaryRowView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/CategoryEntry.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Extensions/Color+Extensions.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Item.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/DiaryRowView.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/CategoryEntry.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Extensions/Color+Extensions.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Item.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/DiaryRowView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 Compiling\ ReminderRowView.swift,\ DiaryEntryType.swift,\ CategoryTableView.swift,\ GeneratedAssetSymbols.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/ReminderRowView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/DiaryEntryType.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CategoryTableView.swift /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/ReminderRowView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/DiaryEntryType.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CategoryTableView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 Compiling\ BackupManager.swift,\ ModelConfig.swift,\ ListToolbarModifier.swift,\ SchemaMigrationPlan.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/BackupManager.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/ModelConfig.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Modifiers/ListToolbarModifier.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/Migrations/SchemaMigrationPlan.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/BackupManager.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/BackupManager.swift:75:27: warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead
+                savePanel.allowedFileTypes = ["json"]
+                          ^
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/ModelConfig.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Modifiers/ListToolbarModifier.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/Migrations/SchemaMigrationPlan.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ 日記 (in target 'newDiary' from project 'newDiary')
+
+EmitSwiftModule normal arm64 (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 Compiling\ ReminderListView.swift,\ Helpers.swift,\ AppSettings.swift,\ ReminderItem.swift,\ DateRangeView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/ReminderListView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Utilities/Helpers.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/AppSettings.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/ReminderItem.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/DateRangeView.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/ReminderListView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Utilities/Helpers.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/AppSettings.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/ReminderItem.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/DateRangeView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 Compiling\ CategoryEntryForm.swift,\ CustomDatePickerView.swift,\ CategoryType.swift,\ AddReminderView.swift,\ ReminderService.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Forms/CategoryEntryForm.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CustomDatePickerView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/CategoryType.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/AddReminderView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Services/ReminderService.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Forms/CategoryEntryForm.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CustomDatePickerView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/CustomDatePickerView.swift:20:35: warning: conditional downcast from 'Any?' to 'Any' does nothing
+        if let diaryEntry = entry as? Any, 
+                            ~~~~~~^~~~~~~
+                                 
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/CategoryType.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/AddReminderView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Services/ReminderService.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 Compiling\ DiaryEntry.swift,\ HelpView.swift,\ MainContentView.swift,\ Reminder.swift,\ PreferencesView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/DiaryEntry.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/HelpView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/Reminder.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/PreferencesView.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/DiaryEntry.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/HelpView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift:821:27: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+                        } catch {
+                          ^
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift:1200:11: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+        } catch {
+          ^
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift:1319:19: warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead
+        openPanel.allowedFileTypes = ["json"]
+                  ^
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift:850:41: warning: will never be executed
+                    (failureCount > 0 ? "，\(failureCount) 篇恢復失敗" : "") +
+/Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/MainContentView.swift:850:35: note: condition always evaluates to false
+                    (failureCount > 0 ? "，\(failureCount) 篇恢復失敗" : "") +
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/Reminder.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/PreferencesView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling CategoryEntry.swift, Color+Extensions.swift, Item.swift, DiaryRowView.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 Compiling\ WeatherRecord.swift,\ ThoughtsSectionView.swift,\ WeatherSectionView.swift,\ WeatherType.swift,\ newDiaryApp.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/WeatherRecord.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/ThoughtsSectionView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/WeatherSectionView.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/WeatherType.swift /Users/wangpuma/Downloads/work/new/newDiary/newDiary/newDiaryApp.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/WeatherRecord.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/ThoughtsSectionView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Views/Components/WeatherSectionView.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Models/WeatherType.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftCompile normal arm64 /Users/wangpuma/Downloads/work/new/newDiary/newDiary/newDiaryApp.swift (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for 日記 (in target 'newDiary' from project 'newDiary')
+
+SwiftDriver\ Compilation\ Requirements newDiary normal arm64 com.apple.xcode.tools.swift.compiler (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name 日記 -Onone -enforce-exclusivity\=checked @/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -target arm64-apple-macos14.0 -g -module-cache-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Index.noindex/DataStore -swift-version 5 -I /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -F /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx15.4-24E241-88b860576fb364319593bd8fb30666b0.sdkstatcache -output-file-map /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary_const_extract_protocols.json -Xcc -iquote -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-generated-files.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-own-target-headers.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-target-headers.hmap -Xcc -iquote -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-project-headers.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/include -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources-normal/arm64 -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/arm64 -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記-Swift.h -working-directory /Users/wangpuma/Downloads/work/new/newDiary -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling BackupManager.swift, ModelConfig.swift, ListToolbarModifier.swift, SchemaMigrationPlan.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftMergeGeneratedHeaders /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/日記-Swift.h /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記-Swift.h (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-swiftHeaderTool -arch arm64 /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記-Swift.h -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/日記-Swift.h
+
+Copy /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/arm64-apple-macos.swiftmodule /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftmodule (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftmodule /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/arm64-apple-macos.swiftmodule
+
+Copy /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/arm64-apple-macos.swiftdoc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftdoc (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftdoc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/arm64-apple-macos.swiftdoc
+
+Copy /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/arm64-apple-macos.abi.json /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.abi.json (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.abi.json /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/arm64-apple-macos.abi.json
+
+Copy /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftsourceinfo (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftsourceinfo /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling ReminderListView.swift, Helpers.swift, AppSettings.swift, ReminderItem.swift, DateRangeView.swift (in target 'newDiary' from project 'newDiary')
+
+LinkAssetCatalog /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Assets.xcassets /Users/wangpuma/Downloads/work/new/newDiary/newDiary/Preview\ Content/Preview\ Assets.xcassets (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-linkAssetCatalog --thinned /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/thinned --thinned-dependencies /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist_unthinned --output /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources --plist-output /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/AppIcon.icns (in target 'newDiary' from project 'newDiary')
+note: Emplaced /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources/Assets.car (in target 'newDiary' from project 'newDiary')
+
+ProcessInfoPlistFile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Info.plist /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/empty-日記.plist (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-infoPlistUtility /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/empty-日記.plist -producttype com.apple.product-type.application -genpkginfo /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/assetcatalog_generated_info.plist -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Info.plist
+
+SwiftDriverJobDiscovery normal arm64 Compiling WeatherRecord.swift, ThoughtsSectionView.swift, WeatherSectionView.swift, WeatherType.swift, newDiaryApp.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftDriverJobDiscovery normal arm64 Compiling CategoryEntryForm.swift, CustomDatePickerView.swift, CategoryType.swift, AddReminderView.swift, ReminderService.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ReminderRowView.swift, DiaryEntryType.swift, CategoryTableView.swift, GeneratedAssetSymbols.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftDriverJobDiscovery normal arm64 Compiling DiaryEntry.swift, HelpView.swift, MainContentView.swift, Reminder.swift, PreferencesView.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftDriverJobDiscovery normal arm64 Compiling RecordView.swift, WeatherService.swift, BackupSelectionView.swift, ContentView.swift, DiaryDetailView.swift (in target 'newDiary' from project 'newDiary')
+
+SwiftDriver\ Compilation newDiary normal arm64 com.apple.xcode.tools.swift.compiler (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name 日記 -Onone -enforce-exclusivity\=checked @/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -target arm64-apple-macos14.0 -g -module-cache-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Index.noindex/DataStore -swift-version 5 -I /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -F /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx15.4-24E241-88b860576fb364319593bd8fb30666b0.sdkstatcache -output-file-map /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/newDiary_const_extract_protocols.json -Xcc -iquote -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-generated-files.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-own-target-headers.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-all-target-headers.hmap -Xcc -iquote -Xcc /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-project-headers.hmap -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/include -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources-normal/arm64 -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources/arm64 -Xcc -I/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記-Swift.h -working-directory /Users/wangpuma/Downloads/work/new/newDiary -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib normal (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -O0 -L/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -F/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -filelist /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.LinkFileList -install_name @rpath/日記.debug.dylib -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -object_path_lto -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -Xlinker -no_adhoc_codesign -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-ExecutorLinkFileList-normal-arm64.txt (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    construct-stub-executor-link-file-list /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'newDiary' from project 'newDiary')
+
+Ld /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記 normal (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk -O0 -L/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -F/Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記-ExecutorLinkFileList-normal-arm64.txt /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記
+
+CopySwiftLibs /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-swiftStdLibTool --copy --verbose --sign 3811B74553B1A442EC79EADB346FC8D72747064B --scan-executable /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib --scan-folder /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Frameworks --scan-folder /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/PlugIns --scan-folder /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Library/SystemExtensions --scan-folder /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Extensions --platform macosx --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ExtractAppIntentsMetadata (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name 日記 --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.4.sdk --xcode-version 16E140 --platform-family macOS --deployment-target 14.0 --bundle-identifier com.wangpuma.newDiary.3 --output /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/Resources --target-triple arm64-apple-macos14.0 --binary-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記 --dependency-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記_dependency_info.dat --stringsdata-file /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftFileList --metadata-file-list /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.DependencyMetadataFileList --static-metadata-file-list /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.DependencyStaticMetadataFileList --swift-const-vals-list /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/Objects-normal/arm64/日記.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2025-04-05 20:50:08.588 appintentsmetadataprocessor[7681:12512419] Starting appintentsmetadataprocessor export
+2025-04-05 20:50:08.590 appintentsmetadataprocessor[7681:12512419] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CodeSign /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+    Signing Identity:     "Apple Development: wangihopuma@gmail.com (6FEB2L3S7H)"
+    
+    /usr/bin/codesign --force --sign 3811B74553B1A442EC79EADB346FC8D72747064B -o runtime --timestamp\=none --generate-entitlement-der /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/日記.debug.dylib
+
+CodeSign /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/__preview.dylib (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+    Signing Identity:     "Apple Development: wangihopuma@gmail.com (6FEB2L3S7H)"
+    
+    /usr/bin/codesign --force --sign 3811B74553B1A442EC79EADB346FC8D72747064B -o runtime --timestamp\=none --generate-entitlement-der /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app/Contents/MacOS/__preview.dylib
+
+CodeSign /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    
+    Signing Identity:     "Apple Development: wangihopuma@gmail.com (6FEB2L3S7H)"
+    
+    /usr/bin/codesign --force --sign 3811B74553B1A442EC79EADB346FC8D72747064B -o runtime --entitlements /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Intermediates.noindex/newDiary.build/Debug/newDiary.build/日記.app.xcent --timestamp\=none --generate-entitlement-der /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app
+
+RegisterExecutionPolicyException /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-RegisterExecutionPolicyException /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app
+
+Validate /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    builtin-validationUtility /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+Touch /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /usr/bin/touch -c /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app
+
+RegisterWithLaunchServices /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app (in target 'newDiary' from project 'newDiary')
+    cd /Users/wangpuma/Downloads/work/new/newDiary
+    /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/wangpuma/Library/Developer/Xcode/DerivedData/newDiary-erhtibmyjcmhhmfqodxhefcjlsrm/Build/Products/Debug/日記.app
+
+** BUILD SUCCEEDED **
+
